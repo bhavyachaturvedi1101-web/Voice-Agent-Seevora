@@ -15,7 +15,7 @@ import {
 
 const app = express();
 const PORT = 3000;
-const JWT_SECRET = 'seevora_super_secret_jwt_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET || 'default_development_jwt_secret';
 
 app.use(express.json());
 

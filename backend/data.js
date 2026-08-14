@@ -4,7 +4,7 @@
 
 import crypto from 'crypto';
 
-const SALT = 'seevora_secret_salt_2026';
+const SALT = process.env.PASSWORD_SALT || 'default_development_salt';
 
 export function hashPassword(password) {
   return crypto.scryptSync(password, SALT, 64).toString('hex');
