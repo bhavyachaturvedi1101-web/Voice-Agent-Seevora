@@ -113,7 +113,8 @@ h4 { font-size: 0.9375rem; font-weight: 600; }
   left: 50%;
   transform: translateX(-50%);
   width: max-content;
-  min-width: 400px;
+  min-width: min(400px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
   height: var(--bottom-nav-height);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%);
   backdrop-filter: blur(20px);
@@ -237,7 +238,7 @@ h4 { font-size: 0.9375rem; font-weight: 600; }
   z-index: 100;
   display: flex;
   align-items: center;
-  padding: 0 32px;
+  padding: 24px 32px 10px;
   gap: 16px;
 }
 
@@ -1409,19 +1410,232 @@ h4 { font-size: 0.9375rem; font-weight: 600; }
 .back-btn:hover { color: #6c63ff; }
 
 /* ── Responsive ───────────────────────────────────────────── */
+
+/* Desktop: explicit column counts (used on unified + pricing pages) */
+.stats-grid-5col { grid-template-columns: repeat(5, 1fr); }
+.stats-grid-4col { grid-template-columns: repeat(4, 1fr); }
+
 @media (max-width: 1024px) {
   .detail-grid { grid-template-columns: 1fr; }
+  .info-grid { grid-template-columns: 1fr 1fr; }
+  .stats-grid-modern { grid-template-columns: repeat(2, 1fr); }
+  /* 5-col → 3-col on tablet */
+  .stats-grid-5col { grid-template-columns: repeat(3, 1fr); }
+  /* 4-col → 2-col on tablet */
+  .stats-grid-4col { grid-template-columns: repeat(2, 1fr); }
 }
 
+/* ── Tablet (768px) ───────────────────────────────────────── */
 @media (max-width: 768px) {
+  /* Layout */
   .sidebar { transform: translateX(-100%); transition: transform var(--transition-normal); }
   .sidebar.open { transform: translateX(0); }
   .main-content { margin-left: 0; }
-  .topbar { left: 0; }
+  .topbar { left: 0; padding: 0 16px; }
   .login-right { width: 100%; }
   .login-left { display: none; }
+
+  /* Page padding */
   .page-content { padding: 16px; }
+
+  /* Topbar — wrap title + actions */
+  .topbar {
+    height: auto;
+    padding: 14px 16px 10px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .topbar-title { flex: 1 1 100%; }
+  .topbar-actions { flex: 1 1 100%; justify-content: flex-start; flex-wrap: wrap; gap: 8px; }
+
+  /* Stats grids */
   .stats-grid { grid-template-columns: 1fr 1fr; }
+  .stats-grid-modern { grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  /* Override inline-forced multi-col grids on mobile */
+  .stats-grid-5col { grid-template-columns: repeat(2, 1fr) !important; }
+  .stats-grid-4col { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Card grid */
+  .card-grid { grid-template-columns: 1fr; gap: 14px; }
+
+  /* Filter bar — stack vertically */
+  .filter-bar { flex-direction: column; align-items: stretch; gap: 8px; }
+  .filter-bar > div { width: 100%; }
+  .filter-bar .search-box { min-width: unset; width: 100%; }
+  .filter-bar .select { width: 100%; }
+
+  /* Tables — horizontal scroll on mobile */
+  .table-container {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius-lg);
+    position: relative;
+  }
+  /* Fade hint on right edge to show there's more content */
+  .table-container::after {
+    content: '→';
+    position: sticky;
+    right: 0;
+    top: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: rgba(15, 23, 42, 0.08);
+    color: #475569;
+    border-radius: 50%;
+    font-size: 0.85rem;
+    pointer-events: none;
+    float: right;
+    margin-top: -60px;
+    margin-right: 4px;
+    animation: scrollHintPulse 2s ease-in-out 3;
+    z-index: 5;
+  }
+  /* Show thin scrollbar on mobile for tables */
+  .table-container::-webkit-scrollbar { height: 4px; }
+  .table-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+  .data-table { min-width: 700px; }
+  .table-header-bar { flex-direction: column; align-items: stretch; gap: 10px; min-width: 700px; }
+  .table-header-bar .search-box { min-width: unset; }
+
+  /* Modals */
+  .modal-overlay { padding: 12px; align-items: flex-end; }
+  .modal {
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: 20px 20px 0 0;
+    animation: slideUpMobile 0.25s ease;
+  }
+  .modal-lg { max-width: 100%; }
+
+  /* Detail page */
+  .detail-grid { grid-template-columns: 1fr; }
+  .info-grid { grid-template-columns: 1fr 1fr; }
+
+  /* Page header */
+  .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .page-header-left { width: 100%; }
+
+  /* Inner tabs — scrollable */
+  .inner-tabs { width: 100%; overflow-x: auto; white-space: nowrap; }
+
+  /* Toast */
+  #toast-container { left: 12px; right: 12px; bottom: calc(var(--bottom-nav-height) + 30px); }
+  .toast { min-width: unset; max-width: 100%; }
+
+  /* Bottom nav shrink */
+  .bottom-nav {
+    bottom: 10px;
+    height: 68px;
+  }
+  .bottom-nav-link { padding: 6px 8px; gap: 4px; }
+  .bottom-nav-text { font-size: 0.62rem; }
+  :root { --bottom-nav-height: 68px; }
+}
+
+/* ── Mobile (480px) ───────────────────────────────────────── */
+@media (max-width: 480px) {
+  /* Typography scale down */
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.25rem; }
+
+  /* Page padding tighter */
+  .page-content { padding: 12px; }
+
+  /* Topbar title smaller */
+  .topbar .topbar-title div:first-child { font-size: 1.1rem !important; }
+  .topbar .topbar-title div:last-child { font-size: 0.72rem !important; }
+
+  /* Topbar buttons — smaller */
+  .topbar-actions > div { flex-direction: row !important; gap: 6px !important; }
+  #admin-btn, #logout-btn { padding: 4px 8px !important; font-size: 0.68rem !important; }
+
+  /* Stats — single column on very small */
+  .stats-grid { grid-template-columns: 1fr; }
+  .stats-grid-modern { grid-template-columns: 1fr; }
+  .stats-grid-5col { grid-template-columns: repeat(2, 1fr) !important; }
+  .stats-grid-4col { grid-template-columns: repeat(2, 1fr) !important; }
+  .stat-value-modern { font-size: 1.75rem; }
+
+  /* Conv cards */
+  .conv-card { padding: 14px; }
+  .conv-name { font-size: 0.875rem; }
+
+  /* Filter bar — force all children to stack/wrap */
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filter-bar > * {
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  /* The inner flex row containing selects + search */
+  .filter-bar > div > .select,
+  .filter-bar > div > .search-box {
+    flex: 1 1 calc(50% - 6px) !important;
+    min-width: 0 !important;
+    width: auto !important;
+  }
+  .filter-bar > div {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+  .filter-bar .search-box input { width: 100% !important; }
+
+  /* Stat cards padding */
+  .stat-card { padding: 16px; }
+  .stat-card-modern { padding: 16px; }
+
+  /* Login */
+  .login-box { padding: 24px 20px; border-radius: 16px; }
+  .login-card { padding: 28px 20px; }
+
+  /* Modal */
+  .modal { padding: 20px 16px; }
+  .modal-footer { flex-direction: column; gap: 8px; }
+  .modal-footer .btn { width: 100%; justify-content: center; }
+
+  /* Chart container */
+  .chart-container { padding: 14px; }
+
+  /* Back button */
+  .back-btn { font-size: 0.75rem; }
+
+  /* Table horizontal scroll label */
+  .data-table { min-width: 500px; }
+
+  /* Bottom nav */
+  .bottom-nav-link { flex: 1; padding: 4px 4px; }
+  .bottom-nav-container { padding: 0 8px; }
+}
+
+/* ── Very small phones (360px) ───────────────────────────── */
+@media (max-width: 360px) {
+  .bottom-nav-text { display: none; }
+  .bottom-nav-link { gap: 0; padding: 8px 4px; }
+  .bottom-nav { height: 58px; }
+  :root { --bottom-nav-height: 58px; }
+  .page-content { padding: 10px; }
+}
+
+/* Mobile modal animation */
+@keyframes slideUpMobile {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Scroll hint animation */
+@keyframes scrollHintPulse {
+  0%, 100% { opacity: 0.6; transform: translateX(0); }
+  50% { opacity: 1; transform: translateX(-4px); }
 }
 
 /* ── Loading Spinner ──────────────────────────────────────── */

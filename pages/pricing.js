@@ -122,7 +122,7 @@ export async function renderPricing(user, navigate) {
         <div class="page-content page-enter">
 
           <!-- Summary Cards -->
-          <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
+          <div class="stats-grid stats-grid-4col">
             <div class="stat-card">
               <div class="stat-icon purple"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.27a16 16 0 0 0 7.74 7.74l1.58-1.58a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 24 16v.92z"/></svg></div>
               <div class="stat-label">Total Calls</div>
