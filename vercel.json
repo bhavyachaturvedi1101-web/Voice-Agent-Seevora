@@ -1,12 +1,8 @@
 {
-  "cleanUrls": true,
+  "framework": null,
+  "buildCommand": "",
+  "outputDirectory": ".",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index.js" },
-    { "source": "/login", "destination": "/index.html" },
-    { "source": "/outbound", "destination": "/index.html" },
-    { "source": "/inbound", "destination": "/index.html" },
-    { "source": "/unified", "destination": "/index.html" },
-    { "source": "/pricing", "destination": "/index.html" },
-    { "source": "/inbound-detail", "destination": "/index.html" }
+    { "source": "/api/(.*)", "destination": "/api/index.js" }
   ]
 }
