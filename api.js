@@ -3,9 +3,9 @@
 //  Matches the contract in calls_api_documentation.md
 // ============================================================
 
-// ── Live API base URL — set VITE_NGROK_BASE_URL in your .env file ──
-const LIVE_BASE = import.meta.env.VITE_NGROK_BASE_URL || '';
-if (!LIVE_BASE) console.warn('[Seevora] VITE_NGROK_BASE_URL is not set in .env — API calls will fail.');
+// ── Live API base URL — set NGROK_BASE_URL in Vercel environment variables ──
+// For local dev, set it in .env and it will be read by the Express server
+const LIVE_BASE = (window.__SEEVORA_CONFIG__ && window.__SEEVORA_CONFIG__.NGROK_BASE_URL) || 'https://griminess-pry-visitor.ngrok-free.dev';
 const API_BASE  = `${LIVE_BASE}/api`;
 
 // ── ngrok interstitial bypass header ──────────────────────

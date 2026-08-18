@@ -29,6 +29,15 @@ app.use((req, res, next) => {
   next();
 });
 
+// ── Serve runtime config to browser ─────────────────────
+// Exposes safe env vars as window.__SEEVORA_CONFIG__
+app.get('/config.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.send(`window.__SEEVORA_CONFIG__ = ${JSON.stringify({
+    NGROK_BASE_URL: process.env.NGROK_BASE_URL || '',
+  })};`);
+});
+
 // Serve static frontend files
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 app.use(express.static(path.join(__dirname, '..')));
