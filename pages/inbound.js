@@ -4,13 +4,17 @@
 
 import { getInboundCalls } from '../api.js';
 import { renderSidebar } from '../components/sidebar.js';
-import { renderTopbar } from '../components/topbar.js';
+import { renderTopbar, updateApiStatusBadge } from '../components/topbar.js';
 
 function statusBadge(status) {
   const map = {
-    answered:  `<span class="badge badge-answered">Answered</span>`,
-    missed:    `<span class="badge badge-missed">Missed</span>`,
-    voicemail: `<span class="badge badge-voicemail">Voicemail</span>`,
+    answered:      `<span class="badge badge-answered">Answered</span>`,
+    completed:     `<span class="badge badge-completed">Completed</span>`,
+    missed:        `<span class="badge badge-missed">Missed</span>`,
+    voicemail:     `<span class="badge badge-voicemail">Voicemail</span>`,
+    failed:        `<span class="badge badge-failed">Failed</span>`,
+    'in-progress': `<span class="badge badge-in-progress"><span class="pulse-dot"></span>Live</span>`,
+    calling:       `<span class="badge badge-in-progress"><span class="pulse-dot"></span>Calling</span>`,
   };
   return map[status] || `<span class="badge">${status}</span>`;
 }
@@ -169,6 +173,9 @@ export async function renderInbound(user, navigate) {
 export async function initInbound(user, navigate) {
   const calls = await getInboundCalls();
   let filtered = [...calls];
+
+  // Update API status badge live
+  updateApiStatusBadge();
 
   document.querySelectorAll('.bottom-nav-link[data-route]').forEach(btn => {
     btn.addEventListener('click', () => navigate(btn.dataset.route));

@@ -1,17 +1,22 @@
+
 // ============================================================
-//  Inbound Call Detail Page
+//  Inbound Call Detail Page — Real API Integration
 // ============================================================
 
 import { getCallById } from '../api.js';
 import { renderSidebar } from '../components/sidebar.js';
-import { renderTopbar } from '../components/topbar.js';
+import { renderTopbar, updateApiStatusBadge } from '../components/topbar.js';
 import { showToast } from '../components/toast.js';
 
 function statusBadge(status) {
   const map = {
-    answered:  `<span class="badge badge-answered">Answered</span>`,
-    missed:    `<span class="badge badge-missed">Missed</span>`,
+    answered: `<span class="badge badge-answered">Answered</span>`,
+    completed: `<span class="badge badge-completed">Completed</span>`,
+    missed: `<span class="badge badge-missed">Missed</span>`,
     voicemail: `<span class="badge badge-voicemail">Voicemail</span>`,
+    failed: `<span class="badge badge-failed">Failed</span>`,
+    'in-progress': `<span class="badge badge-in-progress"><span class="pulse-dot"></span>Live</span>`,
+    calling: `<span class="badge badge-in-progress"><span class="pulse-dot"></span>Calling</span>`,
   };
   return map[status] || `<span class="badge">${status}</span>`;
 }
@@ -48,20 +53,27 @@ export async function renderInboundDetail(user, navigate, params) {
   }
 
   const hasTranscript = call.transcript && call.transcript.length > 0;
-  const hasRecording  = call.recording;
-  const totalSec      = call.durationSeconds || 120;
-  const startTime     = new Date(call.date);
-  const endTime       = new Date(call.date.getTime() + totalSec * 1000);
+  const hasRecording = call.recording;
+  const totalSec = call.duration_s || call.durationSeconds || 120;
+  const dateVal = call.created_at || call.date;
+  const startTime = dateVal ? new Date(dateVal) : new Date();
+  const endTime = new Date(startTime.getTime() + totalSec * 1000);
+  const phoneDisplay = call.phone_number || call.phone || 'Unknown';
+  const callerDisplay = call.caller_name || call.callerName || call.contact_name || 'Unknown';
+  const agentDisplay = call.agent_name || call.agent || 'AI Agent';
+  const costDisplay = call.total_cost_rs > 0
+    ? `₹${call.total_cost_rs.toFixed(2)}`
+    : call.cost ? `₹${call.cost.total.toFixed(2)}` : null;
 
   return `
     <div class="dashboard-shell">
-      ${renderSidebar(call.type || 'inbound', user)}
+      ${renderSidebar(call.direction || call.type || 'inbound', user)}
       <div class="main-content">
         ${renderTopbar({
-          title: `Call ${call.id}`,
-          subtitle: `${call.phone} · ${call.dateFormatted}`,
-          user: user,
-          actions: `
+    title: `Call Detail`,
+    subtitle: `${phoneDisplay} · ${call.dateFormatted || (dateVal ? new Date(dateVal).toLocaleDateString('en-IN') : '')}`,
+    user: user,
+    actions: `
             ${hasRecording ? `<button class="btn btn-secondary btn-sm" id="download-recording-btn">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Download Recording
@@ -71,11 +83,11 @@ export async function renderInboundDetail(user, navigate, params) {
               Export
             </button>
           `
-        })}
+  })}
         <div class="page-content page-enter">
-          <button class="back-btn" id="back-btn" data-back="${call.type || 'inbound'}">
+          <button class="back-btn" id="back-btn" data-back="${call.direction || call.type || 'inbound'}">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-            Back to ${call.type === 'outbound' ? 'Outbound Conversations' : 'Inbound Conversations'}
+            Back to ${(call.direction || call.type) === 'outbound' ? 'Outbound Conversations' : 'Inbound Conversations'}
           </button>
 
           <!-- Status banner -->
@@ -93,22 +105,22 @@ export async function renderInboundDetail(user, navigate, params) {
               <div style="width:1px;height:32px;background:var(--border);"></div>
               <div>
                 <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Duration</div>
-                <div style="font-family:'JetBrains Mono',monospace;font-weight:600;">${call.duration}</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-weight:600;">${call.duration || (totalSec > 0 ? `${Math.floor(totalSec / 60)}:${String(Math.round(totalSec % 60)).padStart(2, '0')}` : '—')}</div>
               </div>
               <div style="width:1px;height:32px;background:var(--border);"></div>
               <div>
                 <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Outcome</div>
-                <div style="font-size:0.875rem;font-weight:600;">${call.outcome}</div>
+                <div style="font-size:0.875rem;font-weight:600;">${call.outcome || call.status || '—'}</div>
               </div>
               <div style="width:1px;height:32px;background:var(--border);"></div>
               <div>
-                <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">AI Confidence</div>
-                <div style="font-size:0.875rem;font-weight:600;color:var(--primary);">${Math.random() > 0.5 ? '98%' : '96%'}</div>
+                <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Direction</div>
+                <div style="font-size:0.875rem;font-weight:600;color:var(--primary);">${(call.direction || call.type || 'inbound').toUpperCase()}</div>
               </div>
             </div>
-            ${call.cost ? `<div style="text-align:right;">
+            ${costDisplay ? `<div style="text-align:right;">
               <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Total Cost</div>
-              <div style="font-size:1.25rem;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--accent-green);">$${call.cost.total.toFixed(4)}</div>
+              <div style="font-size:1.25rem;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--accent-green);">${costDisplay}</div>
             </div>` : ''}
           </div>
 
@@ -156,9 +168,9 @@ export async function renderInboundDetail(user, navigate, params) {
                   <div class="transcript-container" id="transcript-container">
                     ${call.transcript.map((line, i) => `
                       <div class="transcript-line" id="tline-${i}">
-                        <span class="transcript-speaker ${line.speaker}">${line.speaker === 'agent' ? 'AI Agent' : 'Caller'}</span>
+                        <span class="transcript-speaker ${line.role || line.speaker}">${(line.role || line.speaker) === 'agent' ? 'AI Agent' : 'Caller'}</span>
                         <span class="transcript-text">${line.text}</span>
-                        <span class="transcript-time">${line.time}</span>
+                        ${line.time ? `<span class="transcript-time">${line.time}</span>` : ''}
                       </div>
                     `).join('')}
                   </div>
@@ -189,15 +201,15 @@ export async function renderInboundDetail(user, navigate, params) {
                 <div class="info-grid">
                   <div class="info-item">
                     <div class="info-label">Phone</div>
-                    <div class="info-value mono">${call.phone}</div>
+                    <div class="info-value mono">${phoneDisplay}</div>
                   </div>
                   <div class="info-item">
                     <div class="info-label">Name</div>
-                    <div class="info-value">${call.callerName || 'Unknown'}</div>
+                    <div class="info-value">${callerDisplay}</div>
                   </div>
                   <div class="info-item">
                     <div class="info-label">Agent</div>
-                    <div class="info-value" style="font-size:0.8rem;">${call.agent}</div>
+                    <div class="info-value" style="font-size:0.8rem;">${agentDisplay}</div>
                   </div>
                   <div class="info-item">
                     <div class="info-label">Status</div>
@@ -276,6 +288,9 @@ export async function renderInboundDetail(user, navigate, params) {
 export async function initInboundDetail(user, navigate, params) {
   const call = await getCallById(params?.id);
 
+  // Update API status badge live
+  updateApiStatusBadge();
+
   document.querySelectorAll('.bottom-nav-link[data-route]').forEach(btn => {
     btn.addEventListener('click', () => navigate(btn.dataset.route));
   });
@@ -305,10 +320,10 @@ export async function initInboundDetail(user, navigate, params) {
   let interval = null;
   const bars = document.querySelectorAll('.audio-bar');
   const progressFill = document.getElementById('audio-progress-fill');
-  const timeDisplay  = document.getElementById('audio-time-display');
-  const playBtn      = document.getElementById('audio-play');
-  const playIcon     = document.getElementById('play-icon');
-  const pauseIcon    = document.getElementById('pause-icon');
+  const timeDisplay = document.getElementById('audio-time-display');
+  const playBtn = document.getElementById('audio-play');
+  const playIcon = document.getElementById('play-icon');
+  const pauseIcon = document.getElementById('pause-icon');
 
   function formatTime(s) {
     return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
@@ -317,7 +332,7 @@ export async function initInboundDetail(user, navigate, params) {
   function updateProgress() {
     const pct = (currentSec / totalSec) * 100;
     progressFill.style.width = `${pct}%`;
-    timeDisplay.textContent  = `${formatTime(currentSec)} / ${call.duration}`;
+    timeDisplay.textContent = `${formatTime(currentSec)} / ${call.duration}`;
     bars.forEach((b, i) => {
       b.classList.toggle('played', i / bars.length < currentSec / totalSec);
     });
@@ -325,7 +340,7 @@ export async function initInboundDetail(user, navigate, params) {
 
   playBtn?.addEventListener('click', () => {
     playing = !playing;
-    playIcon.style.display  = playing ? 'none' : '';
+    playIcon.style.display = playing ? 'none' : '';
     pauseIcon.style.display = playing ? '' : 'none';
     if (playing) {
       interval = setInterval(() => {
@@ -334,7 +349,7 @@ export async function initInboundDetail(user, navigate, params) {
         if (currentSec >= totalSec) {
           clearInterval(interval);
           playing = false;
-          playIcon.style.display  = '';
+          playIcon.style.display = '';
           pauseIcon.style.display = 'none';
         }
       }, 1000);
@@ -355,7 +370,7 @@ export async function initInboundDetail(user, navigate, params) {
 
   document.getElementById('audio-progress')?.addEventListener('click', (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const pct  = (e.clientX - rect.left) / rect.width;
+    const pct = (e.clientX - rect.left) / rect.width;
     currentSec = Math.round(pct * totalSec);
     updateProgress();
   });

@@ -85,6 +85,13 @@ async function renderPage(route, session, params = {}) {
       default:
         navigate('outbound');
     }
+
+    // Ensure API status badge is refreshed across all pages
+    if (route !== 'login') {
+      import('./components/topbar.js').then(({ updateApiStatusBadge }) => {
+        updateApiStatusBadge();
+      });
+    }
   } catch (err) {
     console.error('Render error:', err);
     app.innerHTML = `

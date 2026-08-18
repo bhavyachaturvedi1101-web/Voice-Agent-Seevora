@@ -8,14 +8,15 @@ import { renderTopbar } from '../components/topbar.js';
 
 function statusBadge(status) {
   const map = {
-    completed:   `<span class="badge badge-completed">Completed</span>`,
-    failed:      `<span class="badge badge-failed">Failed</span>`,
-    missed:      `<span class="badge badge-missed">Missed</span>`,
-    'in-progress': `<span class="badge badge-in-progress"><span class="pulse-dot"></span>In Progress</span>`,
-    scheduled:   `<span class="badge badge-scheduled">Scheduled</span>`,
-    queued:      `<span class="badge badge-queued"><span class="pulse-dot"></span>Queued</span>`,
-    answered:    `<span class="badge badge-answered">Answered</span>`,
-    voicemail:   `<span class="badge badge-voicemail">Voicemail</span>`,
+    completed:     `<span class="badge badge-completed"><span class="pulse-dot" style="display:none"></span>Completed</span>`,
+    answered:      `<span class="badge badge-answered">Answered</span>`,
+    failed:        `<span class="badge badge-failed">Failed</span>`,
+    missed:        `<span class="badge badge-missed">Missed</span>`,
+    voicemail:     `<span class="badge badge-voicemail">Voicemail</span>`,
+    'in-progress': `<span class="badge badge-in-progress"><span class="pulse-dot"></span>Live</span>`,
+    calling:       `<span class="badge badge-in-progress"><span class="pulse-dot"></span>Calling</span>`,
+    scheduled:     `<span class="badge badge-scheduled">Scheduled</span>`,
+    queued:        `<span class="badge badge-queued"><span class="pulse-dot"></span>Queued</span>`,
   };
   return map[status] || `<span class="badge">${status}</span>`;
 }
@@ -70,7 +71,7 @@ function renderTable(calls) {
             <td>${statusBadge(c.status)}</td>
             <td class="col-duration">${c.duration}</td>
             <td>${initiatedBadge(c.initiatedBy)}</td>
-            <td class="col-cost">${c.cost ? '$' + c.cost.total.toFixed(4) : '<span style="color:var(--text-muted)">—</span>'}</td>
+            <td class="col-cost">${c.total_cost_rs > 0 ? '₹' + c.total_cost_rs.toFixed(2) : (c.cost ? '₹' + c.cost.total.toFixed(2) : '<span style="color:var(--text-muted)">—</span>')}</td>
           </tr>
         `).join('')}
       </tbody>

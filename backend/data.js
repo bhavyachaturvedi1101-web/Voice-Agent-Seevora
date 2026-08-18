@@ -1,42 +1,51 @@
 // ============================================================
-//  SEEVORA — Mock Data Store
+//  SEEVORA — Data Store (Real API Shape)
+//  Matches the contract in calls_api_documentation.md
 // ============================================================
 
 import crypto from 'crypto';
 
-const SALT = process.env.PASSWORD_SALT || 'default_development_salt';
+const SALT = process.env.PASSWORD_SALT || 'seevora_secret_salt_2026';
 
 export function hashPassword(password) {
   return crypto.scryptSync(password, SALT, 64).toString('hex');
 }
 
+// ── Users ───────────────────────────────────────────────────
 export const USERS = [
-  { id: 'u1', email: 'admin@seevora.ai', passwordHash: hashPassword('Admin123!'), name: 'Alex Morgan', role: 'Admin', initials: 'AM' },
-  { id: 'u2', email: 'viewer@seevora.ai', passwordHash: hashPassword('Viewer123!'), name: 'Sam Rivera', role: 'Viewer', initials: 'SR' },
+  { id: 'u1', email: 'admin@seevora.ai',  passwordHash: hashPassword('Admin123!'),  name: 'Alex Morgan', role: 'Admin',  initials: 'AM' },
+  { id: 'u2', email: 'viewer@seevora.ai', passwordHash: hashPassword('Viewer123!'), name: 'Sam Rivera',  role: 'Viewer', initials: 'SR' },
 ];
 
+// ── Agents (with real UUID-style IDs) ──────────────────────
 export const AGENTS = [
-  { id: 'a1', name: 'Sales Agent — Tier 1', script: 'Standard Sales Pitch', rate: 0.12 },
-  { id: 'a2', name: 'Support Agent — General', script: 'Customer Support Flow', rate: 0.10 },
-  { id: 'a3', name: 'Appointment Setter', script: 'Appointment Booking', rate: 0.11 },
-  { id: 'a4', name: 'Re-engagement Agent', script: 'Win-Back Campaign', rate: 0.13 },
-  { id: 'a5', name: 'Survey Agent', script: 'Post-Service Survey', rate: 0.09 },
+  { id: 'c5f590a2-25de-4d7a-8f4b-cf1042cb412e', name: 'Sales Agent — Tier 1',      script: 'Standard Sales Pitch',  rate_rs: 1.20 },
+  { id: 'd7a821b3-36ef-5e8b-9g5c-dg2153dc523f', name: 'Support Agent — General',    script: 'Customer Support Flow', rate_rs: 1.00 },
+  { id: 'e8b932c4-47fg-6f9c-0h6d-eh3264ed634g', name: 'Appointment Setter',         script: 'Appointment Booking',   rate_rs: 1.10 },
+  { id: 'f9c043d5-58gh-7g0d-1i7e-fi4375fe745h', name: 'Re-engagement Agent',        script: 'Win-Back Campaign',     rate_rs: 1.30 },
+  { id: 'g0d154e6-69hi-8h1e-2j8f-gj5486gf856i', name: 'Survey Agent',               script: 'Post-Service Survey',   rate_rs: 0.90 },
 ];
 
+// ── Sample data pools ───────────────────────────────────────
 const PHONE_NUMBERS = [
-  '+1 (415) 555-0142', '+1 (646) 555-0198', '+1 (312) 555-0167',
-  '+1 (213) 555-0134', '+1 (214) 555-0155', '+1 (305) 555-0176',
-  '+1 (617) 555-0189', '+1 (404) 555-0121', '+1 (206) 555-0193',
-  '+1 (702) 555-0148', '+44 20 7946 0958', '+1 (503) 555-0162',
-  '+1 (512) 555-0174', '+1 (602) 555-0183', '+1 (720) 555-0151',
+  '+919876543210', '+919812345678', '+918800112233', '+917700998877',
+  '+916600445566', '+915500334455', '+914400223344', '+913300112233',
+  '+912200001122', '+911100990011', '+447911123456', '+14155550142',
+  '+16465550198', '+13125550167', '+12135550134',
 ];
+
+const FIRST_NAMES = ['Rahul', 'Priya', 'Amit', 'Sunita', 'Vikram', 'Deepa', 'Arjun', 'Kavita', 'Rohan', 'Meera', 'James', 'Sarah', 'Mike', 'Jessica', 'David'];
+const LAST_NAMES  = ['Sharma', 'Patel', 'Gupta', 'Singh', 'Kumar', 'Mehta', 'Joshi', 'Verma', 'Agarwal', 'Rao', 'Johnson', 'Williams', 'Smith', 'Brown', 'Davis'];
+
+const COURSES = ['Class 6 Admission', 'MBA Program 2026', 'Engineering Foundation', 'Digital Marketing', 'Data Science Bootcamp'];
+const FEES    = ['Rs 12,000', 'Rs 15,000', 'Rs 18,500', 'Rs 25,000', 'Rs 8,999'];
 
 const SUMMARIES = [
   'Agent introduced product and secured a follow-up meeting scheduled for next Tuesday.',
   'Customer had questions about pricing. Agent provided tier breakdown. Customer requested a callback.',
   'Lead expressed interest in premium plan. Objection on contract length. Agent handled with trial offer.',
   'No answer after 4 rings. Voicemail left with callback number.',
-  'Customer confirmed appointment for Aug 20 at 2:00 PM EST.',
+  'Customer confirmed appointment for Aug 20 at 2:00 PM IST.',
   'Customer not interested. Added to do-not-call list.',
   'Successful upsell to enterprise tier. Revenue opportunity flagged for CRM.',
   'Technical issue on call — dropped after 45 seconds. Marked for retry.',
@@ -44,179 +53,189 @@ const SUMMARIES = [
   'Agent collected delivery preference and updated account details.',
 ];
 
+// Real API shape: role is 'agent' or 'user' (not 'caller')
 const TRANSCRIPTS = [
   [
-    { speaker: 'agent', text: 'Hello, this is Aria from Seevora! Am I speaking with the account holder?', time: '0:02' },
-    { speaker: 'caller', text: 'Yes, this is Mike speaking. Who did you say you are?', time: '0:05' },
-    { speaker: 'agent', text: 'Hi Mike! I\'m Aria, calling from Seevora on behalf of our team. I wanted to share an exclusive offer we\'ve put together specifically for customers like you.', time: '0:08' },
-    { speaker: 'caller', text: 'Oh alright, what kind of offer?', time: '0:16' },
-    { speaker: 'agent', text: 'We\'re offering a 30-day free trial of our premium tier with access to all features including priority support. No credit card required to start. Would you be interested?', time: '0:19' },
-    { speaker: 'caller', text: 'That sounds interesting, yeah. How do I get started?', time: '0:31' },
-    { speaker: 'agent', text: 'Fantastic! I\'ll schedule a brief 15-minute onboarding call with one of our specialists. Are you available Tuesday at 2 PM EST?', time: '0:35' },
-    { speaker: 'caller', text: 'Tuesday at 2 works for me.', time: '0:45' },
-    { speaker: 'agent', text: 'Perfect! I\'ve got you booked in. You\'ll receive a calendar invite to your email shortly. Thanks so much, Mike, and have a great day!', time: '0:47' },
+    { role: 'agent', text: 'Hello Rahul, this is Aria from Seevora! Am I speaking with you?' },
+    { role: 'user',  text: 'Yes, this is Rahul. What is this regarding?' },
+    { role: 'agent', text: 'Hi Rahul! I\'m calling about the Class 6 Admission program. I wanted to share details on the fee structure and enrollment process.' },
+    { role: 'user',  text: 'Oh sure, I was looking into that. What is the fee?' },
+    { role: 'agent', text: 'The total fee for Class 6 Admission is Rs 15,000 for the full year, which includes all materials and assessments. Would you like to proceed?' },
+    { role: 'user',  text: 'That sounds reasonable. Can I enroll online?' },
+    { role: 'agent', text: 'Absolutely! I\'ll send you the enrollment link to your registered number. The process takes under 5 minutes. Thank you, Rahul, have a great day!' },
   ],
   [
-    { speaker: 'agent', text: 'Good afternoon! This is Seevora Support, how can I help you today?', time: '0:01' },
-    { speaker: 'caller', text: 'Hi, I\'ve been having trouble logging into my account since yesterday.', time: '0:04' },
-    { speaker: 'agent', text: 'I\'m sorry to hear that. I can help you resolve this. Can you please confirm the email address on your account?', time: '0:09' },
-    { speaker: 'caller', text: 'Sure, it\'s jess.ford@example.com', time: '0:15' },
-    { speaker: 'agent', text: 'Thank you, Jessica. I can see your account. It looks like there was a recent security lock triggered. I\'m sending a reset link to your email now.', time: '0:18' },
-    { speaker: 'caller', text: 'Oh okay, I should have gotten it. Let me check...', time: '0:28' },
-    { speaker: 'agent', text: 'Of course, please take your time.', time: '0:31' },
-    { speaker: 'caller', text: 'Yes! I see the email. Thank you so much, this was quick.', time: '0:45' },
-    { speaker: 'agent', text: 'You\'re welcome! Is there anything else I can help you with today?', time: '0:49' },
-    { speaker: 'caller', text: 'No that\'s all, thanks!', time: '0:54' },
+    { role: 'agent', text: 'Good afternoon! This is Seevora Support, how can I help you today?' },
+    { role: 'user',  text: 'Hi, I\'ve been having trouble logging into my account since yesterday.' },
+    { role: 'agent', text: 'I\'m sorry to hear that. Can you please confirm the email address on your account?' },
+    { role: 'user',  text: 'Sure, it\'s priya.patel@example.com' },
+    { role: 'agent', text: 'Thank you Priya. I can see your account. There was a security lock triggered. I\'m sending a reset link to your email now.' },
+    { role: 'user',  text: 'Got it, thank you so much!' },
+    { role: 'agent', text: 'You\'re welcome! Is there anything else I can help you with today?' },
+    { role: 'user',  text: 'No that\'s all, thanks!' },
   ],
   [
-    { speaker: 'agent', text: 'Hi there! I\'m calling to confirm your appointment scheduled for this Friday.', time: '0:02' },
-    { speaker: 'caller', text: 'Oh yes, what time was that again?', time: '0:07' },
-    { speaker: 'agent', text: 'Your appointment is confirmed for Friday, August 16th at 10:30 AM. Will that still work for you?', time: '0:10' },
-    { speaker: 'caller', text: 'Actually, could we move it to 11 AM instead?', time: '0:19' },
-    { speaker: 'agent', text: 'Of course! I\'ve updated your appointment to 11:00 AM on Friday, August 16th. You\'ll receive an updated confirmation shortly.', time: '0:22' },
-    { speaker: 'caller', text: 'Great, thank you!', time: '0:32' },
+    { role: 'agent', text: 'Hi! I\'m calling to confirm your appointment scheduled for this Friday.' },
+    { role: 'user',  text: 'Oh yes, what time was that again?' },
+    { role: 'agent', text: 'Your appointment is confirmed for Friday at 10:30 AM IST. Will that still work for you?' },
+    { role: 'user',  text: 'Actually, could we move it to 11 AM instead?' },
+    { role: 'agent', text: 'Of course! I\'ve updated your appointment to 11:00 AM on Friday. You\'ll receive a confirmation shortly.' },
+    { role: 'user',  text: 'Great, thank you!' },
+  ],
+  [
+    { role: 'agent', text: 'Hello! I\'m reaching out about your recent inquiry for the MBA Program 2026.' },
+    { role: 'user',  text: 'Yes, I was interested. Can you tell me more about the curriculum?' },
+    { role: 'agent', text: 'The MBA Program covers Finance, Operations, Strategy and Leadership over 18 months. The fee is Rs 25,000 for the complete program.' },
+    { role: 'user',  text: 'That\'s within my budget. What\'s the next step?' },
+    { role: 'agent', text: 'I\'ll schedule a counseling session with our admissions team for you. Are you available this week?' },
+    { role: 'user',  text: 'Yes, Thursday works for me.' },
+    { role: 'agent', text: 'Perfect! Thursday it is. You\'ll receive a calendar invite shortly. Thank you for your interest!' },
   ],
 ];
 
+// ── UUID Generator ──────────────────────────────────────────
+function uuid() {
+  return crypto.randomUUID();
+}
+
+// ── Helpers ─────────────────────────────────────────────────
 function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-function randomDuration(minSec, maxSec) {
-  const s = randomInt(minSec, maxSec);
-  const m = Math.floor(s / 60);
-  const sec = s % 60;
-  return { formatted: `${m}:${String(sec).padStart(2, '0')}`, seconds: s };
-}
+function randomDurationS(minSec, maxSec) { return parseFloat((Math.random() * (maxSec - minSec) + minSec).toFixed(1)); }
 
 function randomDate(daysBack) {
   const d = new Date();
   d.setDate(d.getDate() - randomInt(0, daysBack));
-  d.setHours(randomInt(8, 20), randomInt(0, 59), 0, 0);
+  d.setHours(randomInt(8, 20), randomInt(0, 59), randomInt(0, 59), 0);
   return d;
 }
 
-function formatDate(d) {
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-function formatTime(d) {
-  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-}
-function formatDateTime(d) { return `${formatDate(d)}, ${formatTime(d)}`; }
-
-const OUTBOUND_STATUSES = ['completed', 'completed', 'completed', 'failed', 'in-progress', 'scheduled', 'missed'];
-const INBOUND_STATUSES  = ['answered', 'answered', 'answered', 'missed', 'voicemail'];
-const INIT_METHODS      = ['manual', 'manual', 'api', 'bulk', 'scheduled'];
-
-function calcCost(durationSec, rate, platformFee = 0.02) {
-  const minutes = durationSec / 60;
-  const callCost = parseFloat((minutes * rate).toFixed(4));
-  return { minuteRate: rate, minutes: parseFloat(minutes.toFixed(2)), callCost, platformFee, total: parseFloat((callCost + platformFee).toFixed(4)) };
+function futureDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + randomInt(1, 7));
+  d.setHours(randomInt(9, 17), 0, 0, 0);
+  return d;
 }
 
-// ── Generate Outbound Calls ─────────────────────────────────
-export function generateOutboundCalls(count = 50) {
-  return Array.from({ length: count }, (_, i) => {
-    const status   = randomFrom(OUTBOUND_STATUSES);
-    const agent    = randomFrom(AGENTS);
-    const dur      = status === 'in-progress' ? randomDuration(20, 180) : status === 'scheduled' ? { formatted: '—', seconds: 0 } : status === 'failed' ? randomDuration(0, 30) : randomDuration(60, 480);
-    const date     = status === 'scheduled' ? (() => { const d = new Date(); d.setDate(d.getDate() + randomInt(1, 7)); d.setHours(randomInt(9, 17), 0, 0, 0); return d; })() : randomDate(30);
-    const cost     = status === 'scheduled' || status === 'failed' ? null : calcCost(dur.seconds, agent.rate);
-    const transIdx = randomInt(0, TRANSCRIPTS.length - 1);
-    return {
-      id: `OUT-${String(1000 + i).padStart(4, '0')}`,
-      type: 'outbound',
-      phone: randomFrom(PHONE_NUMBERS),
-      agent: agent.name,
-      agentId: agent.id,
-      status,
-      duration: dur.formatted,
-      durationSeconds: dur.seconds,
-      date,
-      dateFormatted: formatDateTime(date),
-      initiatedBy: randomFrom(INIT_METHODS),
-      summary: status === 'completed' ? randomFrom(SUMMARIES) : status === 'failed' ? 'Call failed to connect — network error.' : status === 'missed' ? 'No answer. Voicemail not available.' : null,
-      transcript: status === 'completed' ? TRANSCRIPTS[transIdx] : [],
-      cost,
-      recording: status === 'completed',
-    };
-  }).sort((a, b) => b.date - a.date);
+function calcCostRs(durationS, rateRs, platformFee = 0.20) {
+  const minutes   = durationS / 60;
+  const callCost  = parseFloat((minutes * rateRs).toFixed(2));
+  const total     = parseFloat((callCost + platformFee).toFixed(2));
+  return { minuteRate: rateRs, minutes: parseFloat(minutes.toFixed(2)), callCost, platformFee, total };
 }
 
-// ── Generate Inbound Calls ──────────────────────────────────
-export function generateInboundCalls(count = 30) {
-  return Array.from({ length: count }, (_, i) => {
-    const status   = randomFrom(INBOUND_STATUSES);
-    const agent    = randomFrom(AGENTS);
-    const dur      = status === 'answered' ? randomDuration(60, 420) : randomDuration(0, 20);
-    const date     = randomDate(30);
-    const cost     = status === 'answered' ? calcCost(dur.seconds, agent.rate) : { minuteRate: agent.rate, minutes: 0, callCost: 0, platformFee: 0.02, total: 0.02 };
-    const transIdx = randomInt(0, TRANSCRIPTS.length - 1);
-    const outcomes = ['Issue resolved', 'Appointment booked', 'Follow-up required', 'Transferred to human', 'Survey completed', 'No further action needed'];
-    return {
-      id: `IN-${String(2000 + i).padStart(4, '0')}`,
-      type: 'inbound',
-      phone: randomFrom(PHONE_NUMBERS),
-      agent: agent.name,
-      agentId: agent.id,
-      status,
-      duration: dur.formatted,
-      durationSeconds: dur.seconds,
-      date,
-      dateFormatted: formatDateTime(date),
-      outcome: status === 'answered' ? randomFrom(outcomes) : status === 'voicemail' ? 'Voicemail recorded' : 'Missed — no action',
-      summary: status === 'answered' ? randomFrom(SUMMARIES) : null,
-      transcript: status === 'answered' ? TRANSCRIPTS[transIdx] : [],
-      cost,
-      recording: status === 'answered',
-      callerName: Math.random() > 0.5 ? `${randomFrom(['James', 'Sarah', 'Mike', 'Jessica', 'David', 'Emily', 'Chris', 'Amy'])} ${randomFrom(['Johnson', 'Williams', 'Smith', 'Brown', 'Davis', 'Miller', 'Wilson', 'Taylor'])}` : null,
-      capturedData: status === 'answered' ? {
-        'Customer ID': `CX-${randomInt(10000, 99999)}`,
-        'Reason for Call': randomFrom(['Billing inquiry', 'Product support', 'New service inquiry', 'Complaint', 'General question']),
-        'Sentiment': randomFrom(['Positive', 'Neutral', 'Negative', 'Very Positive']),
-        'Next Action': randomFrom(['Send follow-up email', 'Schedule callback', 'Escalate to team', 'No action needed']),
-      } : null,
-    };
-  }).sort((a, b) => b.date - a.date);
+// ── Generate a single call in the real API shape ────────────
+function makeCall(direction, i) {
+  const agent     = randomFrom(AGENTS);
+  const firstName = randomFrom(FIRST_NAMES);
+  const lastName  = randomFrom(LAST_NAMES);
+  const phone     = randomFrom(PHONE_NUMBERS);
+
+  // Status pools matching API docs
+  const outStatuses = ['completed', 'completed', 'completed', 'failed', 'calling', 'missed'];
+  const inStatuses  = ['completed', 'completed', 'completed', 'missed', 'failed'];
+  const status      = randomFrom(direction === 'outbound' ? outStatuses : inStatuses);
+
+  const isActive    = status === 'calling';
+  const isScheduled = false; // scheduled handled separately
+  const hasCall     = status === 'completed';
+
+  const duration_s  = hasCall ? randomDurationS(45, 480)
+                    : isActive ? randomDurationS(10, 120)
+                    : status === 'failed' ? randomDurationS(0, 30)
+                    : 0.0;
+
+  const created_at  = randomDate(30);
+  const started_at  = (hasCall || isActive) ? new Date(created_at.getTime() + randomInt(5, 20) * 1000) : null;
+  const ended_at    = hasCall ? new Date((started_at?.getTime() || 0) + duration_s * 1000) : null;
+
+  const costData    = hasCall ? calcCostRs(duration_s, agent.rate_rs) : null;
+  const transIdx    = randomInt(0, TRANSCRIPTS.length - 1);
+
+  // contact_meta (rich metadata like the API example)
+  const contact_meta = {
+    firstName,
+    lastName,
+    course: randomFrom(COURSES),
+    fee:    randomFrom(FEES),
+  };
+
+  const outcomes    = ['Issue resolved', 'Appointment booked', 'Follow-up required', 'Transferred to human', 'Survey completed'];
+  const inboundOutcome = direction === 'inbound' && hasCall ? randomFrom(outcomes) : null;
+
+  return {
+    // ── Core (matches /calls API response exactly) ──────────
+    id:             uuid(),
+    agent_id:       agent.id,
+    room_name:      `call-${crypto.randomBytes(6).toString('hex')}`,
+    phone_number:   phone,
+    contact_name:   firstName,
+    contact_meta,
+    direction,
+    status,
+    duration_s,
+    total_cost_rs:  costData ? costData.total : 0.0,
+    transcript:     hasCall ? TRANSCRIPTS[transIdx] : [],
+    started_at:     started_at ? started_at.toISOString() : null,
+    ended_at:       ended_at   ? ended_at.toISOString()   : null,
+    created_at:     created_at.toISOString(),
+
+    // ── Extended (display helpers used by dashboard) ────────
+    agent_name:     agent.name,
+    summary:        hasCall ? randomFrom(SUMMARIES) : status === 'failed' ? 'Call failed to connect.' : status === 'missed' ? 'No answer. Voicemail not available.' : null,
+    cost_breakdown: costData,
+    outcome:        inboundOutcome,
+    recording:      hasCall,
+    caller_name:    direction === 'inbound' && Math.random() > 0.4 ? `${firstName} ${lastName}` : null,
+    captured_data:  direction === 'inbound' && hasCall ? {
+      'Customer ID':    `CX-${randomInt(10000, 99999)}`,
+      'Reason for Call': randomFrom(['Billing inquiry', 'Product support', 'New service inquiry', 'Complaint', 'General question']),
+      'Sentiment':       randomFrom(['Positive', 'Neutral', 'Negative', 'Very Positive']),
+      'Next Action':     randomFrom(['Send follow-up email', 'Schedule callback', 'Escalate to team', 'No action needed']),
+    } : null,
+  };
 }
 
-// Singleton stores (re-generated once per session)
-let _outbound = null;
-let _inbound  = null;
+// ── Singleton store ─────────────────────────────────────────
+let _calls = null;
 
-export function getOutboundCalls() {
-  if (!_outbound) _outbound = generateOutboundCalls(50);
-  return _outbound;
+function ensureCalls() {
+  if (_calls) return _calls;
+  const outbound = Array.from({ length: 50 }, (_, i) => makeCall('outbound', i));
+  const inbound  = Array.from({ length: 30 }, (_, i) => makeCall('inbound', i));
+  _calls = [...outbound, ...inbound].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  return _calls;
 }
 
-export function getInboundCalls() {
-  if (!_inbound) _inbound = generateInboundCalls(30);
-  return _inbound;
-}
-
-export function addOutboundCall(call) {
-  if (!_outbound) _outbound = generateOutboundCalls(50);
-  _outbound.unshift(call);
+// ── Public accessors (matching API docs contracts) ──────────
+export function getAllCalls({ agent_id, direction, skip = 0, limit = 50 } = {}) {
+  let calls = ensureCalls();
+  if (agent_id)  calls = calls.filter(c => c.agent_id === agent_id);
+  if (direction) calls = calls.filter(c => c.direction === direction);
+  return calls.slice(skip, skip + limit);
 }
 
 export function getCallById(id) {
-  const all = [...getOutboundCalls(), ...getInboundCalls()];
-  return all.find(c => c.id === id) || null;
+  return ensureCalls().find(c => c.id === id) || null;
 }
 
-export function getAllCalls() {
-  return [...getOutboundCalls(), ...getInboundCalls()].sort((a, b) => b.date - a.date);
+// Backwards compat helpers used by existing Express routes
+export function getOutboundCalls() { return getAllCalls({ direction: 'outbound' }); }
+export function getInboundCalls()  { return getAllCalls({ direction: 'inbound'  }); }
+
+export function addCall(call) {
+  const calls = ensureCalls();
+  calls.unshift(call);
 }
 
 export function getPricingSummary(calls) {
-  const total = calls.reduce((acc, c) => {
-    if (c.cost) acc += c.cost.total;
-    return acc;
-  }, 0);
-  const totalMinutes = calls.reduce((acc, c) => acc + (c.durationSeconds || 0), 0) / 60;
+  const total        = calls.reduce((acc, c) => acc + (c.total_cost_rs || 0), 0);
+  const totalMinutes = calls.reduce((acc, c) => acc + (c.duration_s || 0), 0) / 60;
   return {
-    totalCalls: calls.length,
-    totalMinutes: parseFloat(totalMinutes.toFixed(1)),
-    totalCost: parseFloat(total.toFixed(2)),
-    avgCostPerCall: calls.length ? parseFloat((total / calls.length).toFixed(4)) : 0,
+    totalCalls:      calls.length,
+    totalMinutes:    parseFloat(totalMinutes.toFixed(1)),
+    totalCostRs:     parseFloat(total.toFixed(2)),
+    avgCostPerCall:  calls.length ? parseFloat((total / calls.length).toFixed(2)) : 0,
   };
 }
 
@@ -229,10 +248,10 @@ export function getDailySpend(calls, days = 30) {
     buckets[key] = 0;
   }
   calls.forEach(c => {
-    if (!c.cost) return;
-    const d = c.date;
+    if (!c.total_cost_rs) return;
+    const d   = new Date(c.created_at);
     const key = `${d.getMonth() + 1}/${d.getDate()}`;
-    if (key in buckets) buckets[key] += c.cost.total;
+    if (key in buckets) buckets[key] += c.total_cost_rs;
   });
   const labels = Object.keys(buckets).reverse();
   const values = labels.map(k => parseFloat(buckets[k].toFixed(2)));
