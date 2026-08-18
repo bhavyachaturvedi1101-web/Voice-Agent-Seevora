@@ -13,7 +13,7 @@ export function hashPassword(password) {
 
 // ── Users ───────────────────────────────────────────────────
 export const USERS = [
-  { id: 'u1', email: 'admin@seevora.ai',  passwordHash: hashPassword('Admin123!'),  name: 'Alex Morgan', role: 'Admin',  initials: 'AM' },
+  { id: 'u1', email: 'admin@test.com',  passwordHash: hashPassword('admin123'),  name: 'Alex Morgan', role: 'Admin',  initials: 'AM' },
   { id: 'u2', email: 'viewer@seevora.ai', passwordHash: hashPassword('Viewer123!'), name: 'Sam Rivera',  role: 'Viewer', initials: 'SR' },
 ];
 
