@@ -3,3 +3,6 @@ node_modules/
 .vercel/
 npm-debug.log*
 .DS_Store
+
+# Sensitive API documentation — keep local only
+calls_api_documentation.md

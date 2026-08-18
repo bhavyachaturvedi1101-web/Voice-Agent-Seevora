@@ -15,7 +15,7 @@ import {
 } from '../backend/data.js';
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'default_development_jwt_secret';
 
 app.use(express.json());
