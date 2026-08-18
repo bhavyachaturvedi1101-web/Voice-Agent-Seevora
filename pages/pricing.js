@@ -71,10 +71,10 @@ function renderPricingTable(calls) {
             <td class="col-date">${c.dateFormatted}</td>
             <td class="col-num">${c.phone}</td>
             <td class="col-duration">${c.cost.minutes.toFixed(2)}</td>
-            <td class="mono" style="color:var(--text-secondary);font-size:0.82rem;">$${c.cost.minuteRate}</td>
-            <td class="col-cost">$${c.cost.callCost.toFixed(4)}</td>
-            <td class="mono" style="color:var(--text-secondary);font-size:0.82rem;">$${c.cost.platformFee.toFixed(4)}</td>
-            <td class="col-cost" style="font-size:0.9rem;">$${c.cost.total.toFixed(4)}</td>
+            <td class="mono" style="color:var(--text-secondary);font-size:0.82rem;">₹${c.cost.minuteRate}</td>
+            <td class="col-cost">₹${c.cost.callCost.toFixed(2)}</td>
+            <td class="mono" style="color:var(--text-secondary);font-size:0.82rem;">₹${c.cost.platformFee.toFixed(2)}</td>
+            <td class="col-cost" style="font-size:0.9rem;">₹${c.cost.total.toFixed(2)}</td>
           </tr>
         `).join('')}
       </tbody>
@@ -136,15 +136,15 @@ export async function renderPricing(user, navigate) {
               <div class="stat-sub">min billed</div>
             </div>
             <div class="stat-card">
-              <div class="stat-icon green"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+              <div class="stat-icon green"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12M6 8h12M6 13l8.5 8M6 13h3a4.5 4.5 0 0 0 0-9H6"/></svg></div>
               <div class="stat-label">Total Spend</div>
-              <div class="stat-value">$${summary.totalCost.toFixed(2)}</div>
+              <div class="stat-value">₹${summary.totalCost.toFixed(2)}</div>
               <div class="stat-sub">This period</div>
             </div>
             <div class="stat-card">
               <div class="stat-icon yellow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
               <div class="stat-label">Avg Cost / Call</div>
-              <div class="stat-value">$${summary.avgCostPerCall.toFixed(4)}</div>
+              <div class="stat-value">₹${summary.avgCostPerCall.toFixed(2)}</div>
               <div class="stat-sub">Per call average</div>
             </div>
           </div>
@@ -174,7 +174,7 @@ export async function renderPricing(user, navigate) {
               </div>
               <div style="display:flex;align-items:center;gap:8px;">
                 <span style="width:10px;height:10px;background:var(--accent-primary);border-radius:2px;display:inline-block;"></span>
-                <span style="font-size:0.75rem;color:var(--text-secondary);">Daily cost ($)</span>
+                <span style="font-size:0.75rem;color:var(--text-secondary);">Daily cost (₹)</span>
               </div>
             </div>
             <div style="height:220px;position:relative;">
@@ -229,7 +229,7 @@ export async function initPricing(user, navigate) {
       data: {
         labels: data.labels,
         datasets: [{
-          label: 'Daily Spend ($)',
+          label: 'Daily Spend (₹)',
           data: data.values,
           borderColor: '#6c63ff',
           backgroundColor: 'rgba(108,99,255,0.12)',
@@ -253,7 +253,7 @@ export async function initPricing(user, navigate) {
             titleColor: '#f0f2ff',
             bodyColor: '#8892b0',
             callbacks: {
-              label: ctx => ` $${ctx.parsed.y.toFixed(4)}`
+              label: ctx => ` ₹${ctx.parsed.y.toFixed(2)}`
             }
           }
         },
@@ -264,7 +264,7 @@ export async function initPricing(user, navigate) {
           },
           y: {
             grid: { color: 'rgba(255,255,255,0.04)' },
-            ticks: { color: '#4a5568', font: { size: 10, family: 'Inter' }, callback: v => `$${v.toFixed(2)}` },
+            ticks: { color: '#4a5568', font: { size: 10, family: 'Inter' }, callback: v => `₹${v.toFixed(2)}` },
           }
         }
       }

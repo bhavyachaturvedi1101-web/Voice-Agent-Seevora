@@ -50,21 +50,6 @@ export function renderLogin(onSuccess) {
           </button>
         </form>
 
-        <div class="l-divider">
-          <span>or continue with</span>
-        </div>
-
-        <!-- Social / Demo Buttons -->
-        <div class="l-social-grid">
-          <button type="button" class="l-social-btn" id="demo-admin" title="Admin Demo">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ea4335" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            <span style="font-size:0.75rem; font-weight:600; color:#374151; margin-left:6px;">Admin</span>
-          </button>
-          <button type="button" class="l-social-btn" id="demo-viewer" title="Viewer Demo">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-            <span style="font-size:0.75rem; font-weight:600; color:#374151; margin-left:6px;">Viewer</span>
-          </button>
-        </div>
 
         <div class="l-footer">
           Don't have an account yet? <span style="font-weight:700; cursor:pointer;">Register for free</span>
@@ -113,17 +98,6 @@ export function initLogin(onSuccess) {
     pw.type = pw.type === 'password' ? 'text' : 'password';
   });
 
-  // Demo buttons
-  document.getElementById('demo-admin')?.addEventListener('click', () => {
-    email.value = 'admin@seevora.ai';
-    pw.value = 'Admin123!';
-    email.dispatchEvent(new Event('input'));
-  });
-  document.getElementById('demo-viewer')?.addEventListener('click', () => {
-    email.value = 'viewer@seevora.ai';
-    pw.value = 'Viewer123!';
-    email.dispatchEvent(new Event('input'));
-  });
 
   // Forgot password
   document.getElementById('forgot-password-link')?.addEventListener('click', () => {
@@ -155,10 +129,25 @@ export function initLogin(onSuccess) {
 
     try {
       const data = await login(email.value.trim(), pw.value);
-      const session = { ...data.user, token: data.token, loginTime: Date.now() };
+      const token = data.access_token || data.token;
+
+      // Decode JWT payload (middle part) to get user info
+      let userInfo = {};
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        userInfo = {
+          name:     payload.name     || payload.sub || 'User',
+          email:    payload.email    || email.value.trim(),
+          role:     payload.role     || 'User',
+          initials: payload.initials || (payload.name || 'U').slice(0, 2).toUpperCase(),
+        };
+      } catch { userInfo = { name: 'User', email: email.value.trim(), role: 'User', initials: 'U' }; }
+
+      const session = { ...userInfo, token, access_token: token, loginTime: Date.now() };
       localStorage.setItem('seevora_session', JSON.stringify(session));
-      
-      showToast({ type: 'success', title: `Welcome back, ${session.name.split(' ')[0]}!`, message: `Signed in as ${session.role}` });
+
+      const firstName = (userInfo.name || 'User').split(' ')[0];
+      showToast({ type: 'success', title: `Welcome back, ${firstName}!`, message: `Signed in as ${userInfo.role}` });
       setTimeout(() => onSuccess(session), 300);
     } catch (error) {
       err.classList.remove('hidden');
