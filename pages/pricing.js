@@ -210,7 +210,7 @@ export async function initPricing(user, navigate) {
   let filtered = [...allCalls];
   let days = 30;
 
-  document.querySelectorAll('.bottom-nav-link[data-route]').forEach(btn => {
+  document.querySelectorAll('.side-nav-link[data-route]').forEach(btn => {
     btn.addEventListener('click', () => navigate(btn.dataset.route));
   });
   document.getElementById('logout-btn')?.addEventListener('click', () => {

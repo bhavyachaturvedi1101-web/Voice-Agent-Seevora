@@ -374,7 +374,7 @@ export async function initOutbound(user, navigate) {
   updateApiStatusBadge();
 
   // --- Sidebar nav ---
-  document.querySelectorAll('.bottom-nav-link[data-route]').forEach(btn => {
+  document.querySelectorAll('.side-nav-link[data-route]').forEach(btn => {
     btn.addEventListener('click', () => navigate(btn.dataset.route));
   });
   document.getElementById('logout-btn')?.addEventListener('click', () => {

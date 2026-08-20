@@ -8,6 +8,7 @@ import { renderInbound, initInbound }       from './pages/inbound.js';
 import { renderInboundDetail, initInboundDetail } from './pages/inbound-detail.js';
 import { renderPricing, initPricing }       from './pages/pricing.js';
 import { renderUnified, initUnified }       from './pages/unified.js';
+import { renderAgents, initAgents }         from './pages/agents.js';
 
 const app = document.getElementById('app');
 
@@ -75,6 +76,11 @@ async function renderPage(route, session, params = {}) {
       case 'pricing':
         app.innerHTML = await renderPricing(session, navigate);
         initPricing(session, navigate);
+        break;
+
+      case 'agents':
+        app.innerHTML = await renderAgents(session, navigate);
+        initAgents(session, navigate);
         break;
 
       case 'unified':
