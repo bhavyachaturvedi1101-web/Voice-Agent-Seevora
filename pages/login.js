@@ -136,18 +136,17 @@ export function initLogin(onSuccess) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         userInfo = {
-          name:     payload.name     || payload.sub || 'User',
+          name:     payload.name     || payload.sub || 'Admin',
           email:    payload.email    || email.value.trim(),
-          role:     payload.role     || 'User',
-          initials: payload.initials || (payload.name || 'U').slice(0, 2).toUpperCase(),
+          role:     payload.role     || 'Admin',
+          initials: payload.initials || (payload.name || 'A').slice(0, 2).toUpperCase(),
         };
-      } catch { userInfo = { name: 'User', email: email.value.trim(), role: 'User', initials: 'U' }; }
+      } catch { userInfo = { name: 'Admin', email: email.value.trim(), role: 'Admin', initials: 'AD' }; }
 
       const session = { ...userInfo, token, access_token: token, loginTime: Date.now() };
       localStorage.setItem('seevora_session', JSON.stringify(session));
 
-      const firstName = (userInfo.name || 'User').split(' ')[0];
-      showToast({ type: 'success', title: `Welcome back, ${firstName}!`, message: `Signed in as ${userInfo.role}` });
+      showToast({ type: 'success', title: `Welcome ${userInfo.role}` });
       setTimeout(() => onSuccess(session), 300);
     } catch (error) {
       err.classList.remove('hidden');

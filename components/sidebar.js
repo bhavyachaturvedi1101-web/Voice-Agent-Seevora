@@ -33,9 +33,14 @@ export function renderSidebar(activeRoute, user) {
           <span class="side-nav-text">Logs</span>
         </button>
 
+        <button class="side-nav-link ${activeRoute === 'client-billing' ? 'active' : ''}" data-route="client-billing" id="nav-client-billing">
+          <svg class="side-nav-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span class="side-nav-text">Client Billing</span>
+        </button>
+
         <button class="side-nav-link ${activeRoute === 'pricing' ? 'active' : ''}" data-route="pricing" id="nav-pricing">
           <svg class="side-nav-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          <span class="side-nav-text">Billing</span>
+          <span class="side-nav-text">Platform Billing</span>
         </button>
 
       </div>
