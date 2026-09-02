@@ -3,6 +3,7 @@
 // ============================================================
 
 import { renderLogin, initLogin }           from './pages/login.js';
+import { renderDashboard, initDashboard }   from './pages/dashboard.js';
 import { renderOutbound, initOutbound }     from './pages/outbound.js';
 import { renderInbound, initInbound }       from './pages/inbound.js';
 import { renderInboundDetail, initInboundDetail } from './pages/inbound-detail.js';
@@ -19,6 +20,13 @@ function getSession() {
     const raw = localStorage.getItem('seevora_session');
     if (!raw) return null;
     const s = JSON.parse(raw);
+    
+    // Fix existing sessions with UUID names
+    if (s.name && s.name.length > 20 && s.name.includes('-')) {
+      s.name = 'Admin';
+      s.initials = 'A';
+    }
+    
     // Auto-logout after 30 min inactivity
     if (Date.now() - s.loginTime > 30 * 60 * 1000) {
       localStorage.removeItem('seevora_session');
@@ -56,7 +64,12 @@ async function renderPage(route, session, params = {}) {
     switch (route) {
       case 'login':
         app.innerHTML = await renderLogin();
-        initLogin((sess) => navigate('outbound'));
+        initLogin((sess) => navigate('dashboard'));
+        break;
+      
+      case 'dashboard':
+        app.innerHTML = renderDashboard(session.user);
+        initDashboard();
         break;
 
       case 'outbound':
@@ -95,13 +108,34 @@ async function renderPage(route, session, params = {}) {
         break;
 
       default:
-        navigate('outbound');
+        navigate('dashboard');
+    }
+
+    // Sidebar links
+    if (document.querySelector('.side-nav')) {
+      document.querySelector('.side-nav').addEventListener('click', (e) => {
+        if (e.target.closest('.side-nav-link')) {
+          const btn = e.target.closest('.side-nav-link');
+          const route = btn.dataset.route;
+          if (route) navigate(route);
+        }
+      });
     }
 
     // Ensure API status badge is refreshed across all pages
     if (route !== 'login') {
       import('./components/topbar.js').then(({ updateApiStatusBadge }) => {
         updateApiStatusBadge();
+      });
+    }
+
+    // Initialize 3D Card effects for any newly injected cards
+    if (window.VanillaTilt) {
+      VanillaTilt.init(document.querySelectorAll('[data-tilt]'), {
+        max: 8,
+        speed: 400,
+        glare: true,
+        "max-glare": 0.2
       });
     }
   } catch (err) {
@@ -119,10 +153,19 @@ async function renderPage(route, session, params = {}) {
 // ── Boot ────────────────────────────────────────────────────
 const session = getSession();
 if (session) {
-  navigate('outbound');
+  navigate('dashboard');
 } else {
   navigate('login');
 }
+
+// ── Global Logout Handler ───────────────────────────────────
+document.addEventListener('click', (e) => {
+  const logoutBtn = e.target.closest('#logout-btn') || e.target.closest('#sidebar-logout-btn');
+  if (logoutBtn) {
+    localStorage.removeItem('seevora_session');
+    navigate('login');
+  }
+});
 
 // ── Inactivity auto-logout ──────────────────────────────────
 let inactivityTimer;

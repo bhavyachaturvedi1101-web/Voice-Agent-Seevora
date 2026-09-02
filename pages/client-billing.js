@@ -4,6 +4,7 @@
 
 import { renderSidebar } from '../components/sidebar.js';
 import { renderTopbar } from '../components/topbar.js';
+import { initCardViz } from '../components/three-card-viz.js';
 
 // Mock Client Data for Demonstration
 const MOCK_CLIENTS = [
@@ -77,7 +78,7 @@ function getClientSummary(clients) {
 
 function renderClientTable(clients) {
   if (!clients.length) return `<div class="empty-state"><h3>No clients found</h3></div>`;
-  
+
   return `
     <table class="data-table">
       <thead>
@@ -94,10 +95,10 @@ function renderClientTable(clients) {
       </thead>
       <tbody>
         ${clients.map(c => {
-          const margin = c.revenue - c.cost;
-          const marginPercent = ((margin / c.revenue) * 100).toFixed(1);
-          
-          return `
+    const margin = c.revenue - c.cost;
+    const marginPercent = ((margin / c.revenue) * 100).toFixed(1);
+
+    return `
           <tr>
             <td>
               <div style="display:flex; align-items:center; gap:12px;">
@@ -108,16 +109,16 @@ function renderClientTable(clients) {
               </div>
             </td>
             <td>
-              ${c.status === 'active' 
-                ? `<span class="badge badge-manual" style="font-size:0.68rem; background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0;">Active</span>` 
-                : `<span class="badge badge-api" style="font-size:0.68rem; background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0;">Inactive</span>`}
+              ${c.status === 'active'
+        ? `<span class="badge badge-manual" style="font-size:0.68rem; background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0;">Active</span>`
+        : `<span class="badge badge-api" style="font-size:0.68rem; background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0;">Inactive</span>`}
             </td>
             <td class="col-num">${c.agents}</td>
             <td class="col-num">${c.calls.toLocaleString()}</td>
-            <td class="col-duration">${c.minutes.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td>
-            <td class="col-cost" style="color:var(--text-secondary);">₹${c.cost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-            <td class="col-cost" style="font-size:0.95rem; font-weight:600; color:var(--text-primary);">₹${c.revenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-            <td class="col-cost" style="color:#16a34a; font-weight:500;">+₹${margin.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span style="font-size:0.75rem; color:var(--text-muted);">(${marginPercent}%)</span></td>
+            <td class="col-duration">${c.minutes.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
+            <td class="col-cost" style="color:var(--text-secondary);">₹${c.cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td class="col-cost" style="font-size:0.95rem; font-weight:600; color:var(--text-primary);">₹${c.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td class="col-cost" style="color:#16a34a; font-weight:500;">+₹${margin.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style="font-size:0.75rem; color:var(--text-muted);">(${marginPercent}%)</span></td>
           </tr>
         `}).join('')}
       </tbody>
@@ -136,35 +137,57 @@ export async function renderClientBilling(user, navigate) {
         ${renderTopbar({ title: 'Client Base Billing', subtitle: 'Manage billing and track margins across your clients', user })}
         
         <div class="page-content page-enter">
-          
-          <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 28px;">
-            <div class="stat-card" style="border-bottom: 3px solid #6c63ff;">
-              <div class="stat-icon purple"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-              <div class="stat-label">Active Clients</div>
-              <div class="stat-value">${summary.activeClients}</div>
-              <div class="stat-sub">Out of ${MOCK_CLIENTS.length} total</div>
+               <!-- Flat KPI Metrics -->
+          <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px;">
+
+            <!-- KPI 1: Active Clients -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #8b5cf6; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Active Clients</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">${summary.activeClients}</div>
+                <div><span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">Out of ${MOCK_CLIENTS.length} total</span></div>
+              </div>
             </div>
-            
-            <div class="stat-card" style="border-bottom: 3px solid #0ea5e9;">
-              <div class="stat-icon cyan"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.27a16 16 0 0 0 7.74 7.74l1.58-1.58a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 24 16v.92z"/></svg></div>
-              <div class="stat-label">Client Calls</div>
-              <div class="stat-value">${summary.totalCalls.toLocaleString()}</div>
-              <div class="stat-sub">Across all clients</div>
+
+            <!-- KPI 2: Client Calls -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #0ea5e9; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.27a16 16 0 0 0 7.74 7.74l1.58-1.58a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 24 16v.92z"/></svg>
+              </div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Client Calls</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">${summary.totalCalls.toLocaleString()}</div>
+                <div><span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">Across all clients</span></div>
+              </div>
             </div>
-            
-            <div class="stat-card" style="border-bottom: 3px solid #f59e0b;">
-              <div class="stat-icon yellow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
-              <div class="stat-label">Total Billed</div>
-              <div class="stat-value">₹${summary.totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-              <div class="stat-sub">Platform Cost: ₹${summary.totalCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+
+            <!-- KPI 3: Total Billed -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #eab308; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Total Billed</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">₹${summary.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                <div><span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">Platform Cost: ₹${summary.totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+              </div>
             </div>
-            
-            <div class="stat-card" style="border-bottom: 3px solid #10b981; background: linear-gradient(145deg, #ffffff, #f0fdf4);">
-              <div class="stat-icon green"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
-              <div class="stat-label" style="color: #065f46;">Total Margin</div>
-              <div class="stat-value" style="color: #059669;">+₹${totalMargin.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-              <div class="stat-sub" style="color: #047857;">Overall Profit</div>
+
+            <!-- KPI 4: Total Margin -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #10b981; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              </div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Total Margin</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #059669; line-height: 1; margin: 8px 0;">+₹${totalMargin.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                <div><span style="background: #dcfce7; color: #15803d; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">Net Profit</span></div>
+              </div>
             </div>
+
           </div>
 
           <div class="panel">
@@ -188,7 +211,8 @@ export async function renderClientBilling(user, navigate) {
 }
 
 export async function initClientBilling(user, navigate) {
-  // Bind sidebar nav
+  // 3D Canvas visualizers removed in favour of clean watermark icons
+
   document.querySelectorAll('.side-nav-link[data-route]').forEach(btn => {
     btn.addEventListener('click', () => navigate(btn.dataset.route));
   });
@@ -212,24 +236,25 @@ function exportClientsCSV(clients) {
   const rows = [
     ['Client ID', 'Name', 'Status', 'Active Agents', 'Total Calls', 'Total Minutes', 'Platform Cost', 'Billed Revenue', 'Margin'],
     ...clients.map(c => [
-      c.id, 
-      c.name, 
-      c.status, 
-      c.agents, 
-      c.calls, 
-      c.minutes.toFixed(2), 
-      c.cost.toFixed(2), 
-      c.revenue.toFixed(2), 
+      c.id,
+      c.name,
+      c.status,
+      c.agents,
+      c.calls,
+      c.minutes.toFixed(2),
+      c.cost.toFixed(2),
+      c.revenue.toFixed(2),
       (c.revenue - c.cost).toFixed(2)
     ])
   ];
-  
+
   const csv = rows.map(r => r.join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url; 
-  a.download = `seevora_client_billing_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click(); 
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `seevora_client_billing_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
   URL.revokeObjectURL(url);
 }
+

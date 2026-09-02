@@ -20,6 +20,20 @@ export let AGENTS = [
 ];
 
 // ── Auth helpers ───────────────────────────────────────────
+function getSession() {
+  try {
+    const s = JSON.parse(localStorage.getItem('seevora_session'));
+    if (s && s.token) {
+      if (s.name && s.name.length > 20 && s.name.includes('-')) {
+        s.name = 'Admin';
+        s.initials = 'A';
+      }
+      return { token: s.token, user: { name: s.name, email: s.email, role: s.role, initials: s.initials } };
+    }
+  } catch (e) { }
+  return null;
+}
+
 function getAuthHeaders() {
   try {
     const session = JSON.parse(localStorage.getItem('seevora_session') || '{}');

@@ -4,6 +4,7 @@
 
 import { renderSidebar } from '../components/sidebar.js';
 import { renderTopbar } from '../components/topbar.js';
+import { initCardViz } from '../components/three-card-viz.js';
 
 // Agent data with detailed prompts
 const AGENTS_DATA = [
@@ -234,8 +235,8 @@ function renderAgentCard(agent) {
 
 export async function renderAgents(user, navigate) {
   const totalActive = AGENTS_DATA.filter(a => a.status === 'active').length;
-  const totalCalls  = AGENTS_DATA.reduce((s, a) => s + a.calls_made, 0);
-  const avgSuccess  = Math.round(AGENTS_DATA.reduce((s, a) => s + a.success_rate, 0) / AGENTS_DATA.length);
+  const totalCalls = AGENTS_DATA.reduce((s, a) => s + a.calls_made, 0);
+  const avgSuccess = Math.round(AGENTS_DATA.reduce((s, a) => s + a.success_rate, 0) / AGENTS_DATA.length);
 
   return `
     <div class="dashboard-shell">
@@ -244,30 +245,67 @@ export async function renderAgents(user, navigate) {
         ${renderTopbar({ title: 'AI Agents', subtitle: 'Manage your voice agents and their conversation scripts', user })}
         <div class="page-content page-enter">
 
-          <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 28px;">
-            <div class="stat-card">
-              <div class="stat-icon purple"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-              <div class="stat-label">Total Agents</div>
-              <div class="stat-value">${AGENTS_DATA.length}</div>
-              <div class="stat-sub">${totalActive} active</div>
+          <!-- Flat KPI Metrics -->
+          <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px;">
+            
+            <!-- KPI 1 -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <!-- Giant BG Icon -->
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #8b5cf6; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Total Agents</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">${AGENTS_DATA.length}</div>
+                <div>
+                  <span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">${totalActive} active</span>
+                </div>
+              </div>
             </div>
-            <div class="stat-card">
-              <div class="stat-icon green"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-              <div class="stat-label">Active Agents</div>
-              <div class="stat-value">${totalActive}</div>
-              <div class="stat-sub">Ready to call</div>
+            
+            <!-- KPI 2 -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <!-- Giant BG Icon -->
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #10b981; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              </div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Active Agents</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">${totalActive}</div>
+                <div>
+                  <span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">Ready to call</span>
+                </div>
+              </div>
             </div>
-            <div class="stat-card">
-              <div class="stat-icon cyan"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.27a16 16 0 0 0 7.74 7.74l1.58-1.58a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 24 16v.92z"/></svg></div>
-              <div class="stat-label">Total Calls</div>
-              <div class="stat-value">${totalCalls.toLocaleString()}</div>
-              <div class="stat-sub">Across all agents</div>
+
+            <!-- KPI 3 -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <!-- Giant BG Icon -->
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #0ea5e9; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.27a16 16 0 0 0 7.74 7.74l1.58-1.58a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 24 16v.92z"/></svg>
+              </div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Total Calls</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">${totalCalls.toLocaleString()}</div>
+                <div>
+                  <span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">Across all agents</span>
+                </div>
+              </div>
             </div>
-            <div class="stat-card">
-              <div class="stat-icon yellow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
-              <div class="stat-label">Avg Success Rate</div>
-              <div class="stat-value">${avgSuccess}%</div>
-              <div class="stat-sub">Across all agents</div>
+
+            <!-- KPI 4 -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <!-- Giant BG Icon -->
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #eab308; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              </div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Avg Success Rate</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">${avgSuccess}%</div>
+                <div>
+                  <span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">Across all agents</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -282,6 +320,8 @@ export async function renderAgents(user, navigate) {
 }
 
 export async function initAgents(user, navigate) {
+  // 3D Canvas visualizers removed in favor of clean watermark icons
+
   document.querySelectorAll('.side-nav-link[data-route]').forEach(btn => {
     btn.addEventListener('click', () => navigate(btn.dataset.route));
   });
@@ -306,10 +346,10 @@ export async function initAgents(user, navigate) {
   });
 
   function toggleAgent(agentId) {
-    const card    = document.getElementById('agent-card-' + agentId);
-    const panel   = document.getElementById('prompt-panel-' + agentId);
+    const card = document.getElementById('agent-card-' + agentId);
+    const panel = document.getElementById('prompt-panel-' + agentId);
     const chevron = card.querySelector('.expand-chevron');
-    const isOpen  = panel.classList.contains('open');
+    const isOpen = panel.classList.contains('open');
     panel.classList.toggle('open', !isOpen);
     card.classList.toggle('expanded', !isOpen);
     if (chevron) chevron.classList.toggle('rotated', !isOpen);
@@ -325,3 +365,4 @@ export async function initAgents(user, navigate) {
     });
   };
 }
+

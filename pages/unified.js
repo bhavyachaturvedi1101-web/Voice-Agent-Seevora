@@ -3,20 +3,22 @@
 // ============================================================
 
 import { getAllCalls } from '../api.js';
+import { showToast } from '../components/toast.js';
 import { renderSidebar } from '../components/sidebar.js';
 import { renderTopbar } from '../components/topbar.js';
+import { initCardViz } from '../components/three-card-viz.js';
 
 function statusBadge(status) {
   const map = {
-    completed:     `<span class="badge badge-completed"><span class="pulse-dot" style="display:none"></span>Completed</span>`,
-    answered:      `<span class="badge badge-answered">Answered</span>`,
-    failed:        `<span class="badge badge-failed">Failed</span>`,
-    missed:        `<span class="badge badge-missed">Missed</span>`,
-    voicemail:     `<span class="badge badge-voicemail">Voicemail</span>`,
+    completed: `<span class="badge badge-completed"><span class="pulse-dot" style="display:none"></span>Completed</span>`,
+    answered: `<span class="badge badge-answered">Answered</span>`,
+    failed: `<span class="badge badge-failed">Failed</span>`,
+    missed: `<span class="badge badge-missed">Missed</span>`,
+    voicemail: `<span class="badge badge-voicemail">Voicemail</span>`,
     'in-progress': `<span class="badge badge-in-progress"><span class="pulse-dot"></span>Live</span>`,
-    calling:       `<span class="badge badge-in-progress"><span class="pulse-dot"></span>Calling</span>`,
-    scheduled:     `<span class="badge badge-scheduled">Scheduled</span>`,
-    queued:        `<span class="badge badge-queued"><span class="pulse-dot"></span>Queued</span>`,
+    calling: `<span class="badge badge-in-progress"><span class="pulse-dot"></span>Calling</span>`,
+    scheduled: `<span class="badge badge-scheduled">Scheduled</span>`,
+    queued: `<span class="badge badge-queued"><span class="pulse-dot"></span>Queued</span>`,
   };
   return map[status] || `<span class="badge">${status}</span>`;
 }
@@ -29,9 +31,9 @@ function typeBadge(type) {
 
 function initiatedBadge(method) {
   const map = {
-    manual:    `<span class="badge badge-manual">Manual</span>`,
-    api:       `<span class="badge badge-api">API</span>`,
-    bulk:      `<span class="badge badge-bulk">Bulk</span>`,
+    manual: `<span class="badge badge-manual">Manual</span>`,
+    api: `<span class="badge badge-api">API</span>`,
+    bulk: `<span class="badge badge-bulk">Bulk</span>`,
     scheduled: `<span class="badge badge-auto">Scheduled</span>`,
   };
   return map[method] || (method ? `<span class="badge">${method}</span>` : `<span style="color:var(--text-muted)">—</span>`);
@@ -82,10 +84,10 @@ function renderTable(calls) {
 export async function renderUnified(user, navigate) {
   const allCalls = await getAllCalls();
   const outbound = allCalls.filter(c => c.type === 'outbound').length;
-  const inbound  = allCalls.filter(c => c.type === 'inbound').length;
-  const manual   = allCalls.filter(c => c.initiatedBy === 'manual').length;
-  const api      = allCalls.filter(c => c.initiatedBy === 'api').length;
-  const bulk     = allCalls.filter(c => c.initiatedBy === 'bulk').length;
+  const inbound = allCalls.filter(c => c.type === 'inbound').length;
+  const manual = allCalls.filter(c => c.initiatedBy === 'manual').length;
+  const api = allCalls.filter(c => c.initiatedBy === 'api').length;
+  const bulk = allCalls.filter(c => c.initiatedBy === 'bulk').length;
 
   return `
     <div class="dashboard-shell">
@@ -94,34 +96,57 @@ export async function renderUnified(user, navigate) {
         ${renderTopbar({ title: 'Unified Call Log', subtitle: 'All inbound & outbound calls — for auditing and debugging', user })}
         <div class="page-content page-enter">
 
-          <!-- Stats -->
-          <div class="stats-grid stats-grid-5col">
-            <div class="stat-card">
-              <div class="stat-icon purple"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
-              <div class="stat-label">Total Calls</div>
-              <div class="stat-value">${allCalls.length}</div>
-              <div class="stat-sub">All time</div>
+          <!-- Flat KPI Metrics -->
+          <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px;">
+
+            <!-- KPI 1: Total Calls -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #8b5cf6; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              </div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Total Calls</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">${allCalls.length}</div>
+                <div><span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">All time</span></div>
+              </div>
             </div>
-            <div class="stat-card">
-              <div class="stat-icon purple"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.27a16 16 0 0 0 7.74 7.74l1.58-1.58a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 24 16v.92z"/></svg></div>
-              <div class="stat-label">Outbound</div>
-              <div class="stat-value">${outbound}</div>
+
+            <!-- KPI 2: Outbound -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #0ea5e9; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.27a16 16 0 0 0 7.74 7.74l1.58-1.58a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 24 16v.92z"/><line x1="18" y1="6" x2="23" y2="11"/><line x1="23" y1="6" x2="18" y2="11"/></svg>
+              </div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Outbound</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">${outbound}</div>
+                <div><span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">Calls initiated</span></div>
+              </div>
             </div>
-            <div class="stat-card">
-              <div class="stat-icon cyan"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.05 5A5 5 0 0 1 19 8.95M15.05 1A9 9 0 0 1 23 8.94m-1 7.98v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.27a16 16 0 0 0 7.74 7.74l1.58-1.58a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16v.92z"/></svg></div>
-              <div class="stat-label">Inbound</div>
-              <div class="stat-value">${inbound}</div>
+
+            <!-- KPI 3: Inbound -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #3b82f6; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.05 5A5 5 0 0 1 19 8.95M15.05 1A9 9 0 0 1 23 8.94m-1 7.98v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.27a16 16 0 0 0 7.74 7.74l1.58-1.58a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16v.92z"/></svg>
+              </div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Inbound</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">${inbound}</div>
+                <div><span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">Calls received</span></div>
+              </div>
             </div>
-            <div class="stat-card">
-              <div class="stat-icon yellow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
-              <div class="stat-label">Manual / Dashboard</div>
-              <div class="stat-value">${manual}</div>
+
+            <!-- KPI 4: API / Bulk -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #10b981; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              </div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">API / Bulk</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">${api + bulk}</div>
+                <div><span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">Automated calls</span></div>
+              </div>
             </div>
-            <div class="stat-card">
-              <div class="stat-icon green"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
-              <div class="stat-label">API / Bulk</div>
-              <div class="stat-value">${api + bulk}</div>
-            </div>
+
           </div>
 
           <!-- Filters -->
@@ -181,6 +206,8 @@ export async function initUnified(user, navigate) {
   const allCalls = await getAllCalls();
   let filtered = [...allCalls];
 
+  // 3D Canvas visualizers removed in favor of clean watermark icons
+
   document.querySelectorAll('.side-nav-link[data-route]').forEach(btn => {
     btn.addEventListener('click', () => navigate(btn.dataset.route));
   });
@@ -189,11 +216,11 @@ export async function initUnified(user, navigate) {
     navigate('login');
   });
 
-  const search   = document.getElementById('unified-search');
-  const typeF    = document.getElementById('unified-type-filter');
-  const statusF  = document.getElementById('unified-status-filter');
-  const initF    = document.getElementById('unified-init-filter');
-  const countEl  = document.getElementById('unified-count');
+  const search = document.getElementById('unified-search');
+  const typeF = document.getElementById('unified-type-filter');
+  const statusF = document.getElementById('unified-status-filter');
+  const initF = document.getElementById('unified-init-filter');
+  const countEl = document.getElementById('unified-count');
   const tableWrap = document.getElementById('unified-table-wrap');
 
   function applyFilters() {
@@ -221,3 +248,4 @@ export async function initUnified(user, navigate) {
     applyFilters();
   });
 }
+

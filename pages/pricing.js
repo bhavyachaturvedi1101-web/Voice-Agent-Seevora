@@ -6,6 +6,7 @@ import { getAllCalls } from '../api.js';
 import { renderSidebar } from '../components/sidebar.js';
 import { renderTopbar } from '../components/topbar.js';
 import { showToast } from '../components/toast.js';
+import { initCardViz } from '../components/three-card-viz.js';
 
 let chartInstance = null;
 
@@ -65,8 +66,8 @@ function renderPricingTable(calls) {
             <td class="col-num" style="color:var(--text-muted);font-size:0.78rem;">${c.id}</td>
             <td>
               ${c.type === 'outbound'
-                ? `<span class="badge badge-manual" style="font-size:0.68rem;">Out</span>`
-                : `<span class="badge badge-api" style="font-size:0.68rem;">In</span>`}
+      ? `<span class="badge badge-manual" style="font-size:0.68rem;">Out</span>`
+      : `<span class="badge badge-api" style="font-size:0.68rem;">In</span>`}
             </td>
             <td class="col-date">${c.dateFormatted}</td>
             <td class="col-num">${c.phone}</td>
@@ -93,15 +94,15 @@ function exportCSV(calls) {
   ];
   const csv = rows.map(r => r.join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url; a.download = `seevora_billing_${new Date().toISOString().slice(0,10)}.csv`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `seevora_billing_${new Date().toISOString().slice(0, 10)}.csv`;
   a.click(); URL.revokeObjectURL(url);
 }
 
 export async function renderPricing(user, navigate) {
   const allCalls = await getAllCalls();
-  const summary  = getPricingSummary(allCalls);
+  const summary = getPricingSummary(allCalls);
   const chartData = getDailySpend(allCalls, 30);
 
   return `
@@ -109,44 +110,68 @@ export async function renderPricing(user, navigate) {
       ${renderSidebar('pricing', user)}
       <div class="main-content">
         ${renderTopbar({
-          title: 'Billing & Integrations',
-          subtitle: 'Manage your subscription and API keys',
-          user: user,
-          actions: `
+    title: 'Billing & Integrations',
+    subtitle: 'Manage your subscription and API keys',
+    user: user,
+    actions: `
             <button class="btn btn-ghost btn-sm" id="export-csv-btn">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Export CSV
             </button>
           `
-        })}
+  })}
         <div class="page-content page-enter">
+          <!-- Flat KPI Metrics -->
+          <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px;">
 
-          <!-- Summary Cards -->
-          <div class="stats-grid stats-grid-4col">
-            <div class="stat-card">
-              <div class="stat-icon purple"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.27a16 16 0 0 0 7.74 7.74l1.58-1.58a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 24 16v.92z"/></svg></div>
-              <div class="stat-label">Total Calls</div>
-              <div class="stat-value">${summary.totalCalls}</div>
-              <div class="stat-sub">Inbound + Outbound</div>
+            <!-- KPI 1: Total Calls -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #8b5cf6; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.27a16 16 0 0 0 7.74 7.74l1.58-1.58a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 24 16v.92z"/></svg>
+              </div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Total Calls</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">${summary.totalCalls}</div>
+                <div><span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">Inbound + Outbound</span></div>
+              </div>
             </div>
-            <div class="stat-card">
-              <div class="stat-icon cyan"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-              <div class="stat-label">Total Minutes</div>
-              <div class="stat-value">${summary.totalMinutes}</div>
-              <div class="stat-sub">min billed</div>
+
+            <!-- KPI 2: Total Minutes -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #0ea5e9; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Total Minutes</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">${summary.totalMinutes}</div>
+                <div><span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">min billed</span></div>
+              </div>
             </div>
-            <div class="stat-card">
-              <div class="stat-icon green"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12M6 8h12M6 13l8.5 8M6 13h3a4.5 4.5 0 0 0 0-9H6"/></svg></div>
-              <div class="stat-label">Total Spend</div>
-              <div class="stat-value">₹${summary.totalCost.toFixed(2)}</div>
-              <div class="stat-sub">This period</div>
+
+            <!-- KPI 3: Total Spend -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #10b981; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Total Spend</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">₹${summary.totalCost.toFixed(2)}</div>
+                <div><span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">This period</span></div>
+              </div>
             </div>
-            <div class="stat-card">
-              <div class="stat-icon yellow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-              <div class="stat-label">Avg Cost / Call</div>
-              <div class="stat-value">₹${summary.avgCostPerCall.toFixed(2)}</div>
-              <div class="stat-sub">Per call average</div>
+
+            <!-- KPI 4: Avg Cost / Call -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #eab308; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Avg Cost / Call</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">₹${summary.avgCostPerCall}</div>
+                <div><span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">Est. per call</span></div>
+              </div>
             </div>
+
           </div>
 
           <!-- Date Filter -->
@@ -208,8 +233,9 @@ export async function renderPricing(user, navigate) {
 export async function initPricing(user, navigate) {
   const allCalls = await getAllCalls();
   let filtered = [...allCalls];
-  let days = 30;
 
+  // 3D Canvas visualizers removed in favour of clean watermark icons
+  
   document.querySelectorAll('.side-nav-link[data-route]').forEach(btn => {
     btn.addEventListener('click', () => navigate(btn.dataset.route));
   });
@@ -273,16 +299,16 @@ export async function initPricing(user, navigate) {
 
   buildChart(allCalls, 30);
 
-  const rangeEl   = document.getElementById('pricing-range');
-  const typeEl    = document.getElementById('pricing-type');
-  const searchEl  = document.getElementById('pricing-search');
-  const countEl   = document.getElementById('pricing-count');
+  const rangeEl = document.getElementById('pricing-range');
+  const typeEl = document.getElementById('pricing-type');
+  const searchEl = document.getElementById('pricing-search');
+  const countEl = document.getElementById('pricing-count');
   const tableWrap = document.getElementById('pricing-table-wrap');
 
   function applyFilters() {
     days = parseInt(rangeEl.value);
     const type = typeEl.value;
-    const q    = searchEl.value.toLowerCase();
+    const q = searchEl.value.toLowerCase();
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
     filtered = allCalls.filter(c => {
       if (c.date < cutoff) return false;
@@ -308,3 +334,4 @@ export async function initPricing(user, navigate) {
     showToast({ type: 'success', title: 'CSV exported', message: `${filtered.filter(c => c.cost).length} rows downloaded.` });
   });
 }
+

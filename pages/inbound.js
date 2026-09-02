@@ -5,16 +5,17 @@
 import { getInboundCalls } from '../api.js';
 import { renderSidebar } from '../components/sidebar.js';
 import { renderTopbar, updateApiStatusBadge } from '../components/topbar.js';
+import { initCardViz } from '../components/three-card-viz.js';
 
 function statusBadge(status) {
   const map = {
-    answered:      `<span class="badge badge-answered">Answered</span>`,
-    completed:     `<span class="badge badge-completed">Completed</span>`,
-    missed:        `<span class="badge badge-missed">Missed</span>`,
-    voicemail:     `<span class="badge badge-voicemail">Voicemail</span>`,
-    failed:        `<span class="badge badge-failed">Failed</span>`,
+    answered: `<span class="badge badge-answered">Answered</span>`,
+    completed: `<span class="badge badge-completed">Completed</span>`,
+    missed: `<span class="badge badge-missed">Missed</span>`,
+    voicemail: `<span class="badge badge-voicemail">Voicemail</span>`,
+    failed: `<span class="badge badge-failed">Failed</span>`,
     'in-progress': `<span class="badge badge-in-progress"><span class="pulse-dot"></span>Live</span>`,
-    calling:       `<span class="badge badge-in-progress"><span class="pulse-dot"></span>Calling</span>`,
+    calling: `<span class="badge badge-in-progress"><span class="pulse-dot"></span>Calling</span>`,
   };
   return map[status] || `<span class="badge">${status}</span>`;
 }
@@ -27,15 +28,15 @@ function renderGrid(calls) {
       <p>Try adjusting your filters.</p>
     </div>
   `;
-  
+
   return `
     <div class="card-grid" id="inbound-tbody">
       ${calls.map(call => {
-        const nameOrPhone = call.callerName || call.phone;
-        const initial = nameOrPhone.charAt(0).toUpperCase();
-        const isLive = call.status === 'in-progress';
-        
-        return `
+    const nameOrPhone = call.callerName || call.phone;
+    const initial = nameOrPhone.charAt(0).toUpperCase();
+    const isLive = call.status === 'in-progress';
+
+    return `
         <div class="conv-card inbound-row" data-id="${call.id}">
           <div class="conv-card-header">
             <div class="conv-profile">
@@ -77,32 +78,32 @@ function renderGrid(calls) {
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
               </button>
               <div class="conv-waveform-bars" style="flex:1; gap: 1.5px;">
-                ${Array.from({length: 40}).map((_, i) => {
-                  let h = Math.random() * 100;
-                  if (call.status === 'missed') h = 10;
-                  const isPeak = h > 75;
-                  return `<div class="conv-waveform-bar ${isPeak ? 'peak' : ''}" style="height:${Math.max(10, h)}%"></div>`;
-                }).join('')}
+                ${Array.from({ length: 40 }).map((_, i) => {
+      let h = Math.random() * 100;
+      if (call.status === 'missed') h = 10;
+      const isPeak = h > 75;
+      return `<div class="conv-waveform-bar ${isPeak ? 'peak' : ''}" style="height:${Math.max(10, h)}%"></div>`;
+    }).join('')}
               </div>
             </div>
           </div>
 
           <div class="conv-footer">
-            ${isLive 
-              ? `<button class="btn-pill-primary detail-btn" data-id="${call.id}">Monitor Now <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>` 
-              : `<button class="btn-link-action detail-btn" data-id="${call.id}">View Details →</button>`}
+            ${isLive
+        ? `<button class="btn-pill-primary detail-btn" data-id="${call.id}">Monitor Now <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>`
+        : `<button class="btn-link-action detail-btn" data-id="${call.id}">View Details →</button>`}
           </div>
         </div>
         `;
-      }).join('')}
+  }).join('')}
     </div>
   `;
 }
 
 export async function renderInbound(user, navigate) {
   const calls = await getInboundCalls();
-  const answered  = calls.filter(c => c.status === 'answered').length;
-  const missed    = calls.filter(c => c.status === 'missed').length;
+  const answered = calls.filter(c => c.status === 'answered').length;
+  const missed = calls.filter(c => c.status === 'missed').length;
   const voicemail = calls.filter(c => c.status === 'voicemail').length;
   const totalCost = calls.reduce((acc, c) => acc + (c.cost?.total || 0), 0);
 
@@ -113,33 +114,52 @@ export async function renderInbound(user, navigate) {
         ${renderTopbar({ title: 'Inbound Calls', subtitle: 'Monitor and review incoming AI-handled calls', user })}
         <div class="page-content page-enter">
 
-          <!-- Stats -->
-          <div class="stats-grid-modern">
-            <div class="stat-card-modern">
-              <div class="stat-header-modern">
-                <span class="stat-title-modern">Total Inbound Calls</span>
-                <span class="stat-icon-modern"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.05 5A5 5 0 0 1 19 8.95M15.05 1A9 9 0 0 1 23 8.94m-1 7.98v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.27a16 16 0 0 0 7.74 7.74l1.58-1.58a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16v.92z"/></svg></span>
+          <!-- Flat KPI Metrics -->
+          <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px;">
+            
+            <!-- KPI 1 -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <!-- Giant BG Icon -->
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #3b82f6; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.05 5A5 5 0 0 1 19 8.95M15.05 1A9 9 0 0 1 23 8.94m-1 7.98v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.27a16 16 0 0 0 7.74 7.74l1.58-1.58a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16v.92z"/></svg>
               </div>
-              <div class="stat-value-modern">${calls.length}</div>
-              <div class="stat-trend-modern neutral">Last 30 days</div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Total Inbound Calls</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">${calls.length}</div>
+                <div>
+                  <span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">Last 30 days</span>
+                </div>
+              </div>
             </div>
             
-            <div class="stat-card-modern">
-              <div class="stat-header-modern">
-                <span class="stat-title-modern">Answered</span>
-                <span class="stat-icon-modern"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
+            <!-- KPI 2 -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <!-- Giant BG Icon -->
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #10b981; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
               </div>
-              <div class="stat-value-modern">${answered}</div>
-              <div class="stat-trend-modern up">↑ ${calls.length > 0 ? Math.round((answered/calls.length)*100) : 0}% Answer Rate</div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Answered</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">${answered}</div>
+                <div>
+                  <span style="background: #dcfce7; color: #15803d; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">↑ ${calls.length > 0 ? Math.round((answered / calls.length) * 100) : 0}% Answer Rate</span>
+                </div>
+              </div>
             </div>
-            
-            <div class="stat-card-modern">
-              <div class="stat-header-modern">
-                <span class="stat-title-modern">Missed / Voicemail</span>
-                <span class="stat-icon-modern"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+
+            <!-- KPI 3 -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <!-- Giant BG Icon -->
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #ef4444; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
               </div>
-              <div class="stat-value-modern">${missed + voicemail}</div>
-              <div class="stat-trend-modern down">↓ Requires Follow-up</div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Missed / Voicemail</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">${missed + voicemail}</div>
+                <div>
+                  <span style="background: #fee2e2; color: #b91c1c; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">↓ Requires Follow-up</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -174,6 +194,8 @@ export async function initInbound(user, navigate) {
   const calls = await getInboundCalls();
   let filtered = [...calls];
 
+  // 3D Canvas visualizers removed in favor of clean watermark icons
+
   // Update API status badge live
   updateApiStatusBadge();
 
@@ -185,7 +207,7 @@ export async function initInbound(user, navigate) {
     navigate('login');
   });
 
-  const search  = document.getElementById('inbound-search');
+  const search = document.getElementById('inbound-search');
   const statusF = document.getElementById('inbound-status-filter');
   const countEl = document.getElementById('inbound-count');
   const tableWrap = document.getElementById('inbound-table-wrap');
@@ -213,7 +235,7 @@ export async function initInbound(user, navigate) {
       let playing = false;
       let interval = null;
       let currentSec = 0;
-      
+
       const wrapper = newBtn.closest('.conv-waveform');
       const label = wrapper.querySelector('.conv-waveform-label span:nth-child(2)');
       const bars = Array.from(wrapper.querySelectorAll('.conv-waveform-bar'));
@@ -222,7 +244,7 @@ export async function initInbound(user, navigate) {
       const totalSec = isNaN(m) ? 0 : (m * 60 + s);
 
       function updateUI() {
-        label.textContent = `${Math.floor(currentSec/60)}:${String(currentSec%60).padStart(2,'0')} / ${durationText}`;
+        label.textContent = `${Math.floor(currentSec / 60)}:${String(currentSec % 60).padStart(2, '0')} / ${durationText}`;
         bars.forEach((b, i) => {
           b.classList.toggle('played', (i / bars.length) <= (currentSec / totalSec));
         });
@@ -238,11 +260,11 @@ export async function initInbound(user, navigate) {
           updateUI();
         });
       });
-      
+
       newBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (totalSec === 0) {
-          import('../components/toast.js').then(({ showToast }) => showToast({type:'info', title:'No Audio', message:'No recording available for this call.'}));
+          import('../components/toast.js').then(({ showToast }) => showToast({ type: 'info', title: 'No Audio', message: 'No recording available for this call.' }));
           return;
         }
 
@@ -250,7 +272,7 @@ export async function initInbound(user, navigate) {
         const svgPlay = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
         const svgPause = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
         newBtn.innerHTML = playing ? svgPause : svgPlay;
-        
+
         if (playing) {
           if (currentSec >= totalSec) currentSec = 0;
           interval = setInterval(() => {
@@ -287,11 +309,12 @@ export async function initInbound(user, navigate) {
 
   search.addEventListener('input', applyFilters);
   statusF.addEventListener('change', applyFilters);
-    document.getElementById('inbound-clear-filters')?.addEventListener('click', () => {
-      search.value = ''; statusF.value = '';
-      applyFilters();
-    });
-  
-    bindDetailBtns();
-    bindPlayBtns();
-  }
+  document.getElementById('inbound-clear-filters')?.addEventListener('click', () => {
+    search.value = ''; statusF.value = '';
+    applyFilters();
+  });
+
+  bindDetailBtns();
+  bindPlayBtns();
+}
+

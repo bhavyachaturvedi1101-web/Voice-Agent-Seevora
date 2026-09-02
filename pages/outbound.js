@@ -6,25 +6,26 @@ import { getOutboundCalls, dispatchCall, fetchAgents, AGENTS } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { renderSidebar } from '../components/sidebar.js';
 import { renderTopbar, updateApiStatusBadge } from '../components/topbar.js';
+import { initCardViz } from '../components/three-card-viz.js';
 
 function statusBadge(status) {
   const map = {
-    completed:     `<span class="badge badge-completed"><span class="pulse-dot" style="display:none"></span>Completed</span>`,
-    failed:        `<span class="badge badge-failed">Failed</span>`,
-    missed:        `<span class="badge badge-missed">Missed</span>`,
+    completed: `<span class="badge badge-completed"><span class="pulse-dot" style="display:none"></span>Completed</span>`,
+    failed: `<span class="badge badge-failed">Failed</span>`,
+    missed: `<span class="badge badge-missed">Missed</span>`,
     'in-progress': `<span class="badge badge-in-progress"><span class="pulse-dot"></span>Live</span>`,
-    calling:       `<span class="badge badge-in-progress"><span class="pulse-dot"></span>Calling</span>`,
-    scheduled:     `<span class="badge badge-scheduled">Scheduled</span>`,
-    queued:        `<span class="badge badge-queued"><span class="pulse-dot"></span>Queued</span>`,
+    calling: `<span class="badge badge-in-progress"><span class="pulse-dot"></span>Calling</span>`,
+    scheduled: `<span class="badge badge-scheduled">Scheduled</span>`,
+    queued: `<span class="badge badge-queued"><span class="pulse-dot"></span>Queued</span>`,
   };
   return map[status] || `<span class="badge">${status}</span>`;
 }
 
 function initiatedBadge(method) {
   const map = {
-    manual:    `<span class="badge badge-manual">Manual</span>`,
-    api:       `<span class="badge badge-api">API</span>`,
-    bulk:      `<span class="badge badge-bulk">Bulk Upload</span>`,
+    manual: `<span class="badge badge-manual">Manual</span>`,
+    api: `<span class="badge badge-api">API</span>`,
+    bulk: `<span class="badge badge-bulk">Bulk Upload</span>`,
     scheduled: `<span class="badge badge-auto">Scheduled</span>`,
   };
   return map[method] || `<span class="badge">${method}</span>`;
@@ -55,7 +56,7 @@ function renderCallDetail(call) {
               ${hasMeta ? `
                 <div class="detail-section-title" style="margin-top:12px;">Contact Metadata</div>
                 <div class="cost-breakdown">
-                  ${Object.entries(meta).map(([k,v]) => `
+                  ${Object.entries(meta).map(([k, v]) => `
                     <div class="cost-row"><span class="cost-row-label">${k}</span><span class="cost-row-value mono">${v}</span></div>
                   `).join('')}
                 </div>
@@ -63,7 +64,7 @@ function renderCallDetail(call) {
               ${call.cost || call.total_cost_rs > 0 ? `
                 <div class="detail-section-title" style="margin-top:12px;">Cost Breakdown</div>
                 <div class="cost-breakdown">
-                  <div class="cost-row"><span class="cost-row-label">Duration</span><span class="cost-row-value mono">${(call.duration_s/60).toFixed(2)} min</span></div>
+                  <div class="cost-row"><span class="cost-row-label">Duration</span><span class="cost-row-value mono">${(call.duration_s / 60).toFixed(2)} min</span></div>
                   <div class="cost-row"><span class="cost-row-label">Per-minute rate</span><span class="cost-row-value mono">₹${call.cost?.minuteRate?.toFixed(2) || '—'}/min</span></div>
                   <div class="cost-row"><span class="cost-row-label">Call cost</span><span class="cost-row-value mono">₹${call.cost?.callCost?.toFixed(2) || '—'}</span></div>
                   <div class="cost-row"><span class="cost-row-label">Platform fee</span><span class="cost-row-value mono">₹${call.cost?.platformFee?.toFixed(2) || '—'}</span></div>
@@ -97,83 +98,94 @@ function renderCallDetail(call) {
 function renderGrid(calls) {
   if (!calls.length) return `
     <div class="empty-state">
-      <div class="empty-state-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.27a16 16 0 0 0 7.74 7.74l1.58-1.58a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 24 16v.92z"/></svg></div>
+      <div class="empty-state-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.27a16 16 0 0 0 7.74 7.74l1.58-1.58a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 24 16v.92z"/></svg></div>
       <h3>No calls found</h3>
       <p>Try adjusting your filters or initiate a new call.</p>
     </div>
   `;
-  
+
   return `
-    <div class="card-grid" id="outbound-tbody">
+    <div style="display: flex; flex-direction: column; gap: 16px;" id="outbound-tbody">
       ${calls.map(call => {
-        const displayName = call.contact_name || call.phone_number || call.phone || 'Unknown';
-        const initial = displayName.charAt(0).toUpperCase();
-        const isLive  = call.status === 'in-progress' || call.status === 'calling';
-        const costStr = call.total_cost_rs > 0 ? `₹${call.total_cost_rs.toFixed(2)}` : '—';
-        
-        return `
-        <div class="conv-card" data-id="${call.id}">
-          <div class="conv-card-header">
-            <div class="conv-profile">
-              <div class="conv-avatar">
-                <span class="conv-avatar-placeholder">${initial}</span>
-              </div>
-              <div>
-                <div class="conv-name">${displayName}</div>
-                <div class="conv-sub">${call.phone_number || call.phone || ''}</div>
-              </div>
-            </div>
-            <div class="conv-status ${call.status}">
-              ${isLive ? '<span class="pulse-dot" style="margin-right:2px; color:inherit;"></span>' : ''}
-              ${call.status === 'calling' ? 'Calling...' : call.status.charAt(0).toUpperCase() + call.status.slice(1)}
-            </div>
-          </div>
+    const displayName = call.contact_name || call.phone_number || call.phone || 'Unknown';
+    const initial = displayName.charAt(0).toUpperCase();
+    const isLive = call.status === 'in-progress' || call.status === 'calling';
+    const costStr = call.total_cost_rs > 0 ? `₹${call.total_cost_rs.toFixed(2)}` : (call.cost?.total ? `₹${call.cost.total.toFixed(2)}` : '—');
+    
+    // Formatting date
+    let dateStr = call.dateFormatted || call.created_at || '';
+    if (call.created_at && !call.dateFormatted) {
+      try {
+        const d = new Date(call.created_at);
+        dateStr = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) + ', ' + 
+                  d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }).toLowerCase();
+      } catch(e) {}
+    }
+    
+    const isCompleted = call.status === 'completed';
+    const statusBg = isCompleted ? '#d1fae5' : (isLive ? '#fef3c7' : '#f1f5f9');
+    const statusColor = isCompleted ? '#059669' : (isLive ? '#d97706' : '#64748b');
+
+    return `
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 24px 32px; background: #fff; border-radius: 16px; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.01);">
           
-          <div class="conv-meta">
-            <div class="conv-meta-item">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              ${call.duration || '—'}
+          <!-- Avatar & Name -->
+          <div style="display: flex; align-items: center; gap: 16px; width: 220px;">
+            <div style="width: 44px; height: 44px; border-radius: 50%; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 600;">
+              ${initial}
             </div>
-            <div class="conv-meta-item">
-              <span class="col-cost" style="font-weight:600;">${costStr}</span>
-            </div>
-            <div class="conv-meta-item" style="margin-left:auto;">
-              ${call.dateFormatted || call.created_at || ''}
+            <div>
+              <div style="font-size: 0.95rem; font-weight: 600; color: #0f172a;">${displayName}</div>
+              <div style="font-size: 0.8rem; color: #64748b;">${call.phone_number || call.phone || ''}</div>
             </div>
           </div>
 
-          <div class="conv-waveform">
-            <div class="conv-waveform-label">
-              <span>${call.agent || call.agent_name || 'AI Agent'}</span>
-              <span>0:00 / ${call.duration || '—'}</span>
+          <!-- Status, Duration & Cost -->
+          <div style="width: 140px;">
+            <div style="display: inline-block; background: ${statusBg}; color: ${statusColor}; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 9999px; margin-bottom: 8px;">
+              ${isLive ? '<span style="display:inline-block; width:6px; height:6px; background:#d97706; border-radius:50%; margin-right:4px;"></span>' : ''}
+              ${call.status.charAt(0).toUpperCase() + call.status.slice(1)}
             </div>
-            <div style="display:flex; align-items:center; gap:10px;">
-              <button class="conv-play-btn">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            <div style="font-size: 0.8rem; color: #64748b; display: flex; gap: 12px;">
+              <span>${call.duration || '—'}</span>
+              <span>${costStr}</span>
+            </div>
+          </div>
+
+          <!-- Date -->
+          <div style="font-size: 0.85rem; color: #64748b; width: 160px;">
+            ${dateStr}
+          </div>
+
+          <!-- Waveform Player -->
+          <div style="flex: 1; min-width: 300px; padding: 0 24px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.75rem; color: #64748b;">
+              <span>${call.agent || call.agent_name || 'AI Voice Agent'}</span>
+              <span>0:00 / ${call.duration || '0:00'}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <button style="width: 28px; height: 28px; border-radius: 50%; background: #0f172a; color: #fff; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
               </button>
-              <div class="conv-waveform-bars" style="flex:1; gap: 1.5px;">
-                ${Array.from({length: 40}).map((_, i) => {
+              <div style="display: flex; align-items: flex-end; gap: 2px; flex: 1; height: 24px;">
+                ${Array.from({ length: 60 }).map((_, i) => {
                   let h = Math.random() * 100;
-                  const isPeak = h > 75;
-                  return `<div class="conv-waveform-bar ${isPeak ? 'peak' : ''}" style="height:${Math.max(10, h)}%"></div>`;
+                  return `<div style="width: 3px; height: ${Math.max(15, h)}%; background: #c7d2fe; border-radius: 2px;"></div>`;
                 }).join('')}
               </div>
             </div>
           </div>
 
-          <div class="conv-footer">
-            ${isLive
-              ? `<div style="display:flex;gap:8px;align-items:center;">
-                  <button class="btn-pill-primary detail-btn" data-id="${call.id}">Monitor Now <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>
-                  <button class="btn-link-action refresh-status-btn" data-id="${call.id}" title="Refresh call status from server" style="font-size:0.78rem;display:flex;align-items:center;gap:4px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Refresh
-                  </button>
-                </div>`
-              : `<button class="btn-link-action detail-btn" data-id="${call.id}">View Details →</button>`}
+          <!-- Actions -->
+          <div style="width: 120px; text-align: right;">
+            <button class="detail-btn" data-id="${call.id}" style="background: none; border: none; color: #475569; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: color 0.2s;">
+              View Details &rarr;
+            </button>
           </div>
+
         </div>
         `;
-      }).join('')}
+  }).join('')}
     </div>
   `;
 }
@@ -182,13 +194,13 @@ let expandedRow = null;
 
 export async function renderOutbound(user, navigate) {
   // Fetch agents from real API (populates AGENTS in api.js too)
-  await fetchAgents().catch(() => {});
+  await fetchAgents().catch(() => { });
 
   const calls = await getOutboundCalls();
   const totalCalls = calls.length;
-  const completed  = calls.filter(c => c.status === 'completed').length;
+  const completed = calls.filter(c => c.status === 'completed').length;
   const inProgress = calls.filter(c => c.status === 'in-progress' || c.status === 'calling').length;
-  const failed     = calls.filter(c => c.status === 'failed').length;
+  const failed = calls.filter(c => c.status === 'failed').length;
   const totalCostRs = calls.reduce((acc, c) => acc + (c.total_cost_rs || c.cost?.total || 0), 0);
 
   const isAdmin = user?.role === 'Admin';
@@ -198,51 +210,65 @@ export async function renderOutbound(user, navigate) {
       ${renderSidebar('outbound', user)}
       <div class="main-content" style="background:#f4f6fa;">
         ${renderTopbar({
-          title: 'Outbound Calls',
-          subtitle: 'Launch and monitor AI voice campaigns',
-          user: user,
-          actions: `<button class="btn btn-primary btn-sm" id="initiate-call-btn"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Call</button>`
-        })}
+    title: 'Outbound Calls',
+    subtitle: 'Launch and monitor AI voice campaigns',
+    user: user,
+    actions: `<button class="btn btn-primary btn-sm" id="initiate-call-btn"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Call</button>`
+  })}
         <div class="page-content page-enter">
 
-          <!-- Stats -->
-          <div class="stats-grid-modern">
-            <div class="stat-card-modern">
-              <div class="stat-header-modern">
-                <span class="stat-title-modern">Total Outbound Calls</span>
-                <span class="stat-icon-modern"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.27a16 16 0 0 0 7.74 7.74l1.58-1.58a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 24 16v.92z"/></svg></span>
+          <!-- Flat KPI Metrics -->
+          <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px;">
+            
+            <!-- KPI 1 -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #0ea5e9; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.27a16 16 0 0 0 7.74 7.74l1.58-1.58a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 24 16v.92z"/></svg>
               </div>
-              <div class="stat-value-modern">${totalCalls}</div>
-              <div class="stat-trend-modern neutral">All outbound activity</div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Total Calls</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">${totalCalls}</div>
+                <div><span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">Across all agents</span></div>
+              </div>
             </div>
             
-            <div class="stat-card-modern">
-              <div class="stat-header-modern">
-                <span class="stat-title-modern">Completed Successfully</span>
-                <span class="stat-icon-modern"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <!-- KPI 2 -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #eab308; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
               </div>
-              <div class="stat-value-modern">${completed}</div>
-              <div class="stat-trend-modern up">↑ ${totalCalls ? Math.round((completed/totalCalls)*100) : 0}% Success Rate</div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Avg Success Rate</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">${totalCalls ? Math.round((completed / totalCalls) * 100) : 0}%</div>
+                <div><span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">Across all agents</span></div>
+              </div>
             </div>
-            
-            <div class="stat-card-modern">
-              <div class="stat-header-modern">
-                <span class="stat-title-modern">Live / Calling</span>
-                <span class="stat-icon-modern"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+
+            <!-- KPI 3 -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #a855f7; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               </div>
-              <div class="stat-value-modern">${inProgress}</div>
-              <div class="stat-trend-modern up"><span class="pulse-dot"></span> Live Now</div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Live / Calling</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">${inProgress}</div>
+                <div><span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;"><span class="pulse-dot" style="margin-right: 4px;"></span>Live Now</span></div>
+              </div>
             </div>
-            
-            <div class="stat-card-modern">
-              <div class="stat-header-modern">
-                <span class="stat-title-modern">Total Cost (₹)</span>
-                <span class="stat-icon-modern"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12M6 8h12M6 13l8.5 8M6 13h3a4.5 4.5 0 0 0 0-9H6"/></svg></span>
+
+            <!-- KPI 4 -->
+            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <div style="position: absolute; right: -8px; bottom: -8px; color: #10b981; opacity: 0.18;">
+                <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
               </div>
-              <div class="stat-value-modern">₹${totalCostRs.toFixed(2)}</div>
-              <div class="stat-trend-modern neutral">Outbound spend</div>
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Total Cost</div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">₹${totalCostRs.toFixed(0)}</div>
+                <div><span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">Outbound spend</span></div>
+              </div>
             </div>
           </div>
+
 
           <!-- Filters -->
           <div class="filter-bar" style="background:transparent; padding:0; border:none;">
@@ -370,6 +396,12 @@ export async function initOutbound(user, navigate) {
   const calls = await getOutboundCalls();
   let filtered = [...calls];
 
+  // Initialize 3D Metric Card Backgrounds
+  initCardViz('kpi-viz-1', 'wave');
+  initCardViz('kpi-viz-2', 'rings');
+  initCardViz('kpi-viz-3', 'core');
+  initCardViz('kpi-viz-4', 'wave');
+
   // Update API status badge live
   updateApiStatusBadge();
 
@@ -383,11 +415,11 @@ export async function initOutbound(user, navigate) {
   });
 
   // --- Filters ---
-  const search   = document.getElementById('outbound-search');
-  const statusF  = document.getElementById('outbound-status-filter');
-  const agentF   = document.getElementById('outbound-agent-filter');
-  const initF    = document.getElementById('outbound-init-filter');
-  const countEl  = document.getElementById('outbound-count');
+  const search = document.getElementById('outbound-search');
+  const statusF = document.getElementById('outbound-status-filter');
+  const agentF = document.getElementById('outbound-agent-filter');
+  const initF = document.getElementById('outbound-init-filter');
+  const countEl = document.getElementById('outbound-count');
   const tableWrap = document.getElementById('outbound-table-wrap');
 
   function applyFilters() {
@@ -416,7 +448,7 @@ export async function initOutbound(user, navigate) {
       let playing = false;
       let interval = null;
       let currentSec = 0;
-      
+
       const wrapper = newBtn.closest('.conv-waveform');
       const label = wrapper.querySelector('.conv-waveform-label span:nth-child(2)');
       const bars = Array.from(wrapper.querySelectorAll('.conv-waveform-bar'));
@@ -425,7 +457,7 @@ export async function initOutbound(user, navigate) {
       const totalSec = isNaN(m) ? 0 : (m * 60 + s);
 
       function updateUI() {
-        label.textContent = `${Math.floor(currentSec/60)}:${String(currentSec%60).padStart(2,'0')} / ${durationText}`;
+        label.textContent = `${Math.floor(currentSec / 60)}:${String(currentSec % 60).padStart(2, '0')} / ${durationText}`;
         bars.forEach((b, i) => {
           b.classList.toggle('played', (i / bars.length) <= (currentSec / totalSec));
         });
@@ -441,11 +473,11 @@ export async function initOutbound(user, navigate) {
           updateUI();
         });
       });
-      
+
       newBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (totalSec === 0) {
-          import('../components/toast.js').then(({ showToast }) => showToast({type:'info', title:'No Audio', message:'No recording available for this call.'}));
+          import('../components/toast.js').then(({ showToast }) => showToast({ type: 'info', title: 'No Audio', message: 'No recording available for this call.' }));
           return;
         }
 
@@ -453,7 +485,7 @@ export async function initOutbound(user, navigate) {
         const svgPlay = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
         const svgPause = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
         newBtn.innerHTML = playing ? svgPause : svgPlay;
-        
+
         if (playing) {
           if (currentSec >= totalSec) currentSec = 0;
           interval = setInterval(() => {
@@ -495,7 +527,7 @@ export async function initOutbound(user, navigate) {
             if (idx !== -1) filtered[idx] = updated;
             tableWrap.innerHTML = renderGrid(filtered);
             bindRowExpand(); bindDetailBtns(); bindPlayBtns(); bindRefreshBtns();
-            import('../components/toast.js').then(({ showToast }) => 
+            import('../components/toast.js').then(({ showToast }) =>
               showToast({ type: 'info', title: 'Status Checked', message: `Call status: ${updated.status}` })
             );
           }
@@ -559,17 +591,17 @@ export async function initOutbound(user, navigate) {
   modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
   // Tab switching — Call Now / Schedule
-  const tabNow      = document.getElementById('tab-now');
+  const tabNow = document.getElementById('tab-now');
   const tabSchedule = document.getElementById('tab-schedule');
   const scheduleFields = document.getElementById('schedule-fields');
-  const callBtn     = document.getElementById('call-now-btn');
+  const callBtn = document.getElementById('call-now-btn');
 
   function setTab(mode) {
     isScheduleMode = mode === 'schedule';
-    tabNow.style.cssText      = isScheduleMode ? 'flex:1;padding:8px;border:none;border-radius:8px;font-weight:600;font-size:0.85rem;cursor:pointer;background:transparent;color:var(--text-secondary,#64748b);' : 'flex:1;padding:8px;border:none;border-radius:8px;font-weight:600;font-size:0.85rem;cursor:pointer;background:#fff;color:var(--primary,#6c63ff);box-shadow:0 1px 4px rgba(0,0,0,.08);';
+    tabNow.style.cssText = isScheduleMode ? 'flex:1;padding:8px;border:none;border-radius:8px;font-weight:600;font-size:0.85rem;cursor:pointer;background:transparent;color:var(--text-secondary,#64748b);' : 'flex:1;padding:8px;border:none;border-radius:8px;font-weight:600;font-size:0.85rem;cursor:pointer;background:#fff;color:var(--primary,#6c63ff);box-shadow:0 1px 4px rgba(0,0,0,.08);';
     tabSchedule.style.cssText = isScheduleMode ? 'flex:1;padding:8px;border:none;border-radius:8px;font-weight:600;font-size:0.85rem;cursor:pointer;background:#fff;color:var(--primary,#6c63ff);box-shadow:0 1px 4px rgba(0,0,0,.08);' : 'flex:1;padding:8px;border:none;border-radius:8px;font-weight:600;font-size:0.85rem;cursor:pointer;background:transparent;color:var(--text-secondary,#64748b);';
     scheduleFields.classList.toggle('hidden', !isScheduleMode);
-    document.getElementById('modal-title-text').textContent   = isScheduleMode ? 'Schedule Outbound Call' : 'New Outbound Call';
+    document.getElementById('modal-title-text').textContent = isScheduleMode ? 'Schedule Outbound Call' : 'New Outbound Call';
     document.getElementById('modal-subtitle-text').textContent = isScheduleMode ? 'Pick a date & time to auto-dispatch' : 'Dispatch immediately via AI agent';
     callBtn.innerHTML = isScheduleMode
       ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Save Schedule`
@@ -581,52 +613,52 @@ export async function initOutbound(user, navigate) {
   // Pre-fill today's date and current time + 1h for convenience
   const nowD = new Date(); nowD.setHours(nowD.getHours() + 1, 0, 0, 0);
   document.getElementById('schedule-date').value = nowD.toISOString().split('T')[0];
-  document.getElementById('schedule-time').value = nowD.toTimeString().slice(0,5);
+  document.getElementById('schedule-time').value = nowD.toTimeString().slice(0, 5);
 
   document.getElementById('call-now-btn')?.addEventListener('click', async () => {
-    const phone   = document.getElementById('call-phone').value.trim();
+    const phone = document.getElementById('call-phone').value.trim();
     const agentId = document.getElementById('call-agent').value;
     const firstName = document.getElementById('contact-firstname')?.value.trim();
-    const lastName  = document.getElementById('contact-lastname')?.value.trim();
-    const course    = document.getElementById('contact-course')?.value.trim();
-    const fee       = document.getElementById('contact-fee')?.value.trim();
+    const lastName = document.getElementById('contact-lastname')?.value.trim();
+    const course = document.getElementById('contact-course')?.value.trim();
+    const fee = document.getElementById('contact-fee')?.value.trim();
 
-    if (!phone) { showToast({ type:'warning', title:'Phone required', message:'Enter a phone number in E.164 format.' }); return; }
-    if (!/^\+\d{10,15}$/.test(phone)) { showToast({ type:'warning', title:'Invalid format', message:'Use E.164 format e.g. +919876543210' }); return; }
-    if (!agentId) { showToast({ type:'warning', title:'Agent required', message:'Please select an AI agent.' }); return; }
+    if (!phone) { showToast({ type: 'warning', title: 'Phone required', message: 'Enter a phone number in E.164 format.' }); return; }
+    if (!/^\+\d{10,15}$/.test(phone)) { showToast({ type: 'warning', title: 'Invalid format', message: 'Use E.164 format e.g. +919876543210' }); return; }
+    if (!agentId) { showToast({ type: 'warning', title: 'Agent required', message: 'Please select an AI agent.' }); return; }
 
     const contact = {};
     if (firstName) contact.firstName = firstName;
-    if (lastName)  contact.lastName  = lastName;
-    if (course)    contact.course    = course;
-    if (fee)       contact.fee       = fee;
+    if (lastName) contact.lastName = lastName;
+    if (course) contact.course = course;
+    if (fee) contact.fee = fee;
 
     // ── SCHEDULE MODE ─────────────────────────────────────────
     if (isScheduleMode) {
       const dateVal = document.getElementById('schedule-date').value;
       const timeVal = document.getElementById('schedule-time').value;
       if (!dateVal || !timeVal) {
-        showToast({ type:'warning', title:'Date & Time required', message:'Please pick a date and time for the scheduled call.' });
+        showToast({ type: 'warning', title: 'Date & Time required', message: 'Please pick a date and time for the scheduled call.' });
         return;
       }
       const scheduledAt = new Date(`${dateVal}T${timeVal}`);
       if (scheduledAt <= new Date()) {
-        showToast({ type:'warning', title:'Invalid time', message:'Scheduled time must be in the future.' });
+        showToast({ type: 'warning', title: 'Invalid time', message: 'Scheduled time must be in the future.' });
         return;
       }
       const agentObj = AGENTS.find(a => a.id === agentId);
       const scheduledCall = {
-        id:            `sch-${Date.now()}`,
-        agent_id:      agentId,
-        agent_name:    agentObj?.name || 'AI Agent',
-        phone_number:  phone,
-        contact_name:  firstName || phone,
-        contact_meta:  contact,
-        direction:     'outbound',
-        status:        'scheduled',
-        scheduled_at:  scheduledAt.toISOString(),
-        created_at:    new Date().toISOString(),
-        duration_s:    0, total_cost_rs: 0, transcript: [],
+        id: `sch-${Date.now()}`,
+        agent_id: agentId,
+        agent_name: agentObj?.name || 'AI Agent',
+        phone_number: phone,
+        contact_name: firstName || phone,
+        contact_meta: contact,
+        direction: 'outbound',
+        status: 'scheduled',
+        scheduled_at: scheduledAt.toISOString(),
+        created_at: new Date().toISOString(),
+        duration_s: 0, total_cost_rs: 0, transcript: [],
       };
       // Save to localStorage
       const existing = JSON.parse(localStorage.getItem('seevora_scheduled_calls') || '[]');
@@ -637,7 +669,7 @@ export async function initOutbound(user, navigate) {
       tableWrap.innerHTML = renderGrid(filtered);
       bindRowExpand(); bindDetailBtns(); bindPlayBtns();
       closeModal();
-      showToast({ type:'success', title:'Call Scheduled! 🗓', message:`Will dispatch to ${phone} on ${scheduledAt.toLocaleString('en-IN', {dateStyle:'medium', timeStyle:'short'})}` });
+      showToast({ type: 'success', title: 'Call Scheduled! 🗓', message: `Will dispatch to ${phone} on ${scheduledAt.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}` });
       return;
     }
 
@@ -652,7 +684,7 @@ export async function initOutbound(user, navigate) {
       tableWrap.innerHTML = renderGrid(filtered);
       bindRowExpand(); bindDetailBtns(); bindPlayBtns();
       closeModal();
-      showToast({ type:'success', title:'Call dispatched!', message:`Dialing ${phone}${firstName ? ` (${firstName})` : ''}…` });
+      showToast({ type: 'success', title: 'Call dispatched!', message: `Dialing ${phone}${firstName ? ` (${firstName})` : ''}…` });
 
       let attempts = 0;
       const poll = setInterval(async () => {
@@ -669,7 +701,7 @@ export async function initOutbound(user, navigate) {
       }, 3000);
 
     } catch (err) {
-      showToast({ type:'error', title:'Dispatch Failed', message: err.message });
+      showToast({ type: 'error', title: 'Dispatch Failed', message: err.message });
     } finally {
       btn.disabled = false;
       btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Call Now`;
@@ -686,3 +718,4 @@ export async function initOutbound(user, navigate) {
     bindRowExpand(); bindDetailBtns(); bindPlayBtns();
   }
 }
+

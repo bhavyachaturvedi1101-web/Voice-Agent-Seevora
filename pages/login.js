@@ -1,64 +1,73 @@
 // ============================================================
-//  Login Page — Light Theme, Centered
+//  Login Page — Ultra-Premium Full Screen with Particle Wave
 // ============================================================
 
 import { login } from '../api.js';
 import { showToast } from '../components/toast.js';
+import { initThreeParticleWave } from '../components/three-particle-wave.js';
+
+let orbContext = null;
 
 export function renderLogin(onSuccess) {
   return `
-    <div class="login-wrapper">
+    <div class="login-wrapper" style="background-image: url('/assets/login_bg_final.jpg'); background-size: cover; background-position: center; min-height: 100vh; display: flex; align-items: center; justify-content: flex-start; padding: 24px; padding-left: 10%;">
       
-      <!-- Top Logo outside card -->
-      <div class="login-top-logo">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-        Seevora Voice Agent
-      </div>
-
-      <!-- The Card -->
-      <div class="login-box">
-        <h1 class="login-title">Login</h1>
+      <!-- Floating Form perfectly covering the left side -->
+      <div style="width: 100%; max-width: 460px; min-height: 520px; padding: 60px 40px; display: flex; flex-direction: column; justify-content: center; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px); border-radius: 24px; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1); border: 1px solid rgba(255, 255, 255, 0.4); border-top: 1px solid rgba(255, 255, 255, 0.6); border-left: 1px solid rgba(255, 255, 255, 0.6);">
+        
+        <!-- Logo -->
+        <div style="display:flex; align-items:center; margin-bottom: 20px;">
+          <!-- Custom audio wave icon -->
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2v20M16 6v12M8 6v12M20 9v6M4 9v6" stroke="#4f46e5" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+          <span style="font-size: 2rem; font-weight: 800; color: #0f172a; margin-left: 10px; font-family: Inter, sans-serif; letter-spacing: -0.02em;">Seevora</span>
+        </div>
+          <h1 style="color: #111827; font-size: 1.8rem; font-weight: 700; margin-bottom: 6px; margin-top: 0; font-family: Inter, sans-serif;">AI Voice Agent</h1>
+          <p style="color: #6b7280; margin-bottom: 32px; font-size: 0.9rem; margin-top: 0;">Your voice. Our AI. Infinite possibilities.</p>
 
         <!-- Error message -->
-        <div class="login-error hidden" id="login-error">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        <div class="login-error hidden" id="login-error" style="background: rgba(239,68,68,0.2); color: #fff; padding: 12px; border-radius: 12px; font-size: 0.85rem; margin-bottom: 16px; border: 1px solid rgba(239,68,68,0.3);">
           <span id="login-error-text">Invalid credentials.</span>
         </div>
 
         <form id="login-form" novalidate>
-          <div class="l-group">
-            <label class="l-label" for="login-email">Email</label>
-            <input class="l-input" type="email" id="login-email" name="email" placeholder="username@gmail.com" required />
+          <div class="l-group" style="position: relative; margin-bottom: 16px;">
+            <div style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #9ca3af;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            </div>
+            <input class="l-input" type="email" id="login-email" name="email" placeholder="Email address" required style="width: 100%; padding: 14px 14px 14px 44px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; font-size: 0.95rem; color: #111827; outline: none; transition: border-color 0.2s;" />
           </div>
 
-          <div class="l-group">
-            <label class="l-label" for="login-password">Password</label>
-            <div style="position: relative;">
-              <input class="l-input" type="password" id="login-password" name="password" placeholder="Password" required />
-              <button type="button" id="toggle-pw" class="l-eye-btn" tabindex="-1">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              </button>
+          <div class="l-group" style="position: relative; margin-bottom: 12px;">
+            <div style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #9ca3af;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             </div>
-            <div class="l-forgot-wrap">
-              <span class="l-forgot" id="forgot-password-link">Forgot Password?</span>
-            </div>
+            <input class="l-input" type="password" id="login-password" name="password" placeholder="Password" required style="width: 100%; padding: 14px 14px 14px 44px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; font-size: 0.95rem; color: #111827; outline: none; transition: border-color 0.2s;" />
+            <button type="button" id="toggle-pw" class="l-eye-btn" tabindex="-1" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #9ca3af; cursor: pointer;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
           </div>
 
-          <button type="submit" class="l-submit" id="login-submit-btn">
-            <span id="login-btn-text">Sign in</span>
-            <span id="login-btn-spinner" class="hidden spinner"></span>
+          <div class="l-forgot-wrap" style="display: flex; justify-content: flex-end; margin-bottom: 24px;">
+            <span class="l-forgot" id="forgot-password-link" style="font-size: 0.8rem; color: #6b7280; cursor: pointer; text-decoration: none;">Forgot password?</span>
+          </div>
+
+          <button type="submit" class="l-submit" id="login-submit-btn" style="width: 100%; padding: 14px; background: #3b82f6; color: #fff; border: none; border-radius: 12px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: background 0.2s; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);">
+            <span id="login-btn-text">Log In</span>
+            <span id="login-btn-spinner" class="hidden spinner" style="border-top-color:#fff;"></span>
           </button>
         </form>
 
-
-        <div class="l-footer">
-          Don't have an account yet? <span style="font-weight:700; cursor:pointer;">Register for free</span>
+        <div style="margin-top: 32px; font-size: 0.85rem; color: #6b7280; text-align: center;">
+          Don't have an account? <span style="font-weight:600; color: #3b82f6; cursor: pointer;">Sign up</span>
         </div>
+
       </div>
 
       <!-- Forgot Password Modal -->
-      <div id="forgot-modal" class="modal-overlay hidden">
-        <div class="modal" style="max-width:400px;">
+      <div id="forgot-modal" class="modal-overlay hidden" style="z-index: 1000;">
+        <div class="modal" style="max-width:400px; background: rgba(255,255,255,0.9); backdrop-filter: blur(16px);">
           <div class="modal-header">
             <div>
               <div class="modal-title">Reset Password</div>
@@ -70,7 +79,7 @@ export function renderLogin(onSuccess) {
           </div>
           <div class="form-group">
             <label class="form-label" for="forgot-email">Email address</label>
-            <input class="input" type="email" id="forgot-email" placeholder="you@seevora.ai" />
+            <input class="input" type="email" id="forgot-email" placeholder="you@seevora.ai" style="background: rgba(255,255,255,0.8);" />
           </div>
           <div class="modal-footer" style="margin-top:12px;padding-top:12px;">
             <button class="btn btn-ghost" id="forgot-cancel-btn">Cancel</button>
@@ -84,20 +93,19 @@ export function renderLogin(onSuccess) {
 }
 
 export function initLogin(onSuccess) {
-  const form       = document.getElementById('login-form');
-  const email      = document.getElementById('login-email');
-  const pw         = document.getElementById('login-password');
-  const err        = document.getElementById('login-error');
-  const errTxt     = document.getElementById('login-error-text');
-  const btn        = document.getElementById('login-submit-btn');
-  const btnTxt     = document.getElementById('login-btn-text');
+  const form = document.getElementById('login-form');
+  const email = document.getElementById('login-email');
+  const pw = document.getElementById('login-password');
+  const err = document.getElementById('login-error');
+  const errTxt = document.getElementById('login-error-text');
+  const btn = document.getElementById('login-submit-btn');
+  const btnTxt = document.getElementById('login-btn-text');
   const btnSpinner = document.getElementById('login-btn-spinner');
 
   // Toggle password visibility
   document.getElementById('toggle-pw')?.addEventListener('click', () => {
     pw.type = pw.type === 'password' ? 'text' : 'password';
   });
-
 
   // Forgot password
   document.getElementById('forgot-password-link')?.addEventListener('click', () => {
@@ -136,10 +144,10 @@ export function initLogin(onSuccess) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         userInfo = {
-          name:     payload.name     || payload.sub || 'Admin',
-          email:    payload.email    || email.value.trim(),
-          role:     payload.role     || 'Admin',
-          initials: payload.initials || (payload.name || 'A').slice(0, 2).toUpperCase(),
+          name: payload.name || 'Admin',
+          email: payload.email || email.value.trim(),
+          role: payload.role || 'Admin',
+          initials: (payload.name || 'A').slice(0, 1).toUpperCase(),
         };
       } catch { userInfo = { name: 'Admin', email: email.value.trim(), role: 'Admin', initials: 'AD' }; }
 
@@ -147,6 +155,13 @@ export function initLogin(onSuccess) {
       localStorage.setItem('seevora_session', JSON.stringify(session));
 
       showToast({ type: 'success', title: `Welcome ${userInfo.role}` });
+
+      // Cleanup 3D scene before navigating away
+      if (orbContext) {
+        orbContext.destroy();
+        orbContext = null;
+      }
+
       setTimeout(() => onSuccess(session), 300);
     } catch (error) {
       err.classList.remove('hidden');
