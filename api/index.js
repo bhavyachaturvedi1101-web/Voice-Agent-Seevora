@@ -73,34 +73,18 @@ function handleLogin(req, res) {
 
   const cleanEmail = email.trim().toLowerCase();
   const hashedInput = hashPassword(password);
-  
-  // Find matching user (case-insensitive)
-  let user = USERS.find(u => u.email.toLowerCase() === cleanEmail && (u.passwordHash === hashedInput || password === 'admin123' || password === 'client123'));
-  
-  // Resilient fallback for demo logins on Vercel
+
+  // Find user: case-insensitive email + correct password hash
+  let user = USERS.find(u => u.email.toLowerCase() === cleanEmail && u.passwordHash === hashedInput);
+
+  // Fallback: role-based demo match (handles alias emails & Vercel env where SALT may vary)
   if (!user) {
-    if (cleanEmail.includes('admin') || password === 'admin123') {
-      user = USERS.find(u => u.role === 'Admin') || {
-        id: 'u1',
-        name: 'Alex Morgan',
-        email: cleanEmail,
-        role: 'Admin',
-        initials: 'AM',
-        businessName: 'Seevora AI',
-        walletBalance: 50000,
-        plan: 'Enterprise'
-      };
-    } else if (cleanEmail.includes('client') || cleanEmail.includes('sharma') || password === 'client123') {
-      user = USERS.find(u => u.role === 'Client') || {
-        id: 'u3',
-        name: 'Rahul Sharma',
-        email: cleanEmail,
-        role: 'Client',
-        initials: 'RS',
-        businessName: 'Sharma Real Estate',
-        walletBalance: 500,
-        plan: 'Self-Serve Starter'
-      };
+    const byEmail = USERS.find(u => u.email.toLowerCase() === cleanEmail);
+    if (byEmail) {
+      // Email matched but hash didn't — Vercel env may have different SALT; allow known demo passwords
+      const isDemoAdmin  = password === 'admin123'  && byEmail.role === 'Admin';
+      const isDemoClient = password === 'client123' && byEmail.role === 'Client';
+      if (isDemoAdmin || isDemoClient) user = byEmail;
     }
   }
 
@@ -109,33 +93,25 @@ function handleLogin(req, res) {
   }
 
   const payload = {
-    userId:   user.id,
-    name:     user.name,
-    email:    user.email,
-    role:     user.role || 'Admin',
-    initials: user.initials || (user.name ? user.name[0] : 'U'),
+    userId:       user.id,
+    name:         user.name,
+    email:        user.email,
+    role:         user.role || 'Admin',
+    initials:     user.initials || user.name.slice(0, 2).toUpperCase(),
     businessName: user.businessName || '',
     walletBalance: user.walletBalance !== undefined ? user.walletBalance : (user.role === 'Admin' ? 50000 : 500),
-    plan: user.plan || (user.role === 'Admin' ? 'Enterprise' : 'Self-Serve Starter'),
+    plan:         user.plan || (user.role === 'Admin' ? 'Enterprise' : 'Self-Serve Starter'),
   };
 
   const access_token = jwt.sign(payload, JWT_SECRET, { expiresIn: '12h' });
   res.json({ access_token, token: access_token, user: payload });
 }
 
-// Bind to all possible Vercel rewrites and URL paths
-app.post('/auth/login', handleLogin);
-app.post('/api/login', handleLogin);
+// Bind to all possible URL paths Vercel might route to
+app.post('/auth/login',     handleLogin);
+app.post('/api/login',      handleLogin);
 app.post('/api/auth/login', handleLogin);
-app.post('/login', handleLogin);
-
-// Also intercept any POST ending in /login in case Vercel alters the path
-app.use((req, res, next) => {
-  if (req.method === 'POST' && (req.path.endsWith('/login') || req.url.includes('/login'))) {
-    return handleLogin(req, res);
-  }
-  next();
-});
+app.post('/login',          handleLogin);
 
 // ── POST /auth/signup ────────────────────────────────────
 app.post('/auth/signup', (req, res) => {
