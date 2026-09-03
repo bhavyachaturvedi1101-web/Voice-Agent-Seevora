@@ -68,16 +68,20 @@ const MOCK_CLIENTS = [
 export async function renderClientBilling(session, navigate) {
   const user = session?.user || session;
   const isClient = (user?.role || '').toLowerCase() === 'client';
+  const override = localStorage.getItem('seevora_billing_view_override');
+  const effectiveView = override || (isClient ? 'client' : 'agency');
 
-  return isClient ? renderClientSelfBilling(user) : renderAgencyBilling(user);
+  return effectiveView === 'client' 
+    ? renderClientSelfBilling(user, !isClient) 
+    : renderAgencyBilling(user);
 }
 
 // ────────────────────────────────────────────────────────────
 //  CLIENT SELF-SERVE BILLING & WALLET VIEW
 // ────────────────────────────────────────────────────────────
-function renderClientSelfBilling(user) {
+function renderClientSelfBilling(user, isPreview = false) {
   const walletBalance = user?.walletBalance !== undefined ? user.walletBalance : 500;
-  const businessName = user?.businessName || 'Your Business';
+  const businessName = user?.businessName || 'Sharma Enterprises';
   
   // Stored transactions or initial demo invoices
   const transactions = JSON.parse(localStorage.getItem('seevora_wallet_tx') || 'null') || [
@@ -127,10 +131,16 @@ function renderClientSelfBilling(user) {
             <h1 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 0;">Billing & Calling Wallet</h1>
             <p style="font-size: 0.85rem; color: #64748b; margin: 4px 0 0 0;">${businessName} • Wallet balance, auto-recharge, real-time call ledger & tax invoices</p>
           </div>
-          <div class="topbar-right">
+          <div class="topbar-right" style="display: flex; align-items: center; gap: 12px;">
+            ${isPreview ? `
+              <button id="btn-back-to-agency" style="background: #0f172a; border: none; color: #fff; padding: 8px 16px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                <span>Return to Agency Admin View</span>
+              </button>
+            ` : ''}
             <div style="display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 4px 12px 4px 4px; border-radius: 12px; border: 1px solid #f1f5f9;">
-              <div style="width: 32px; height: 32px; border-radius: 8px; background: #e0f9ff; color: #0369a1; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700;">${user?.initials || 'U'}</div>
-              <span style="font-size: 0.85rem; font-weight: 600; color: #0f172a;">${user?.name || 'Client'}</span>
+              <div style="width: 32px; height: 32px; border-radius: 8px; background: #e0f9ff; color: #0369a1; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700;">${user?.initials || 'SE'}</div>
+              <span style="font-size: 0.85rem; font-weight: 600; color: #0f172a;">${businessName}</span>
             </div>
           </div>
         </header>
@@ -541,7 +551,7 @@ function renderClientSelfBilling(user) {
 }
 
 // ────────────────────────────────────────────────────────────
-//  AGENCY ADMIN BILLING VIEW (Existing Agency Tool)
+//  AGENCY ADMIN BILLING VIEW
 // ────────────────────────────────────────────────────────────
 function renderAgencyBilling(user) {
   const summary = getClientSummary(MOCK_CLIENTS);
@@ -554,61 +564,82 @@ function renderAgencyBilling(user) {
       <main class="main-content">
         <header class="topbar">
           <div class="topbar-left">
-            <h1>Client Billing & Invoicing (Agency Admin)</h1>
-            <p>Track client usage, apply markups, and manage profit margins</p>
+            <h1 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 0;">Client Billing & Invoicing (Agency Admin)</h1>
+            <p style="font-size: 0.85rem; color: #64748b; margin: 4px 0 0 0;">Manage client accounts, set per-minute margins, generate GST invoices & manage wallet credits</p>
           </div>
-          <div class="topbar-right">
-            <div style="display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 4px 12px 4px 4px; border-radius: 9999px; border: 1px solid #f1f5f9;">
-              <div style="width: 32px; height: 32px; border-radius: 50%; background: #e0f9ff; color: #0369a1; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600;">${user?.initials || 'AD'}</div>
-              <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary);">${user?.name || 'Admin'}</span>
+          <div class="topbar-right" style="display: flex; align-items: center; gap: 12px;">
+            <button id="btn-toggle-client-portal" style="background: #f0f9ff; border: 1px solid #0ea5e9; color: #0284c7; padding: 8px 16px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+              <span>Switch to Client Self-Serve Portal</span>
+            </button>
+            <div style="display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 4px 12px 4px 4px; border-radius: 12px; border: 1px solid #f1f5f9;">
+              <div style="width: 32px; height: 32px; border-radius: 8px; background: #e0f9ff; color: #0369a1; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700;">${user?.initials || 'AD'}</div>
+              <span style="font-size: 0.85rem; font-weight: 600; color: #0f172a;">${user?.name || 'Admin'}</span>
             </div>
           </div>
         </header>
 
-        <div class="page-container" style="padding-top: 24px;">
-          <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px;">
+        <div class="page-container" style="padding-top: 24px; max-width: 1400px; width: 100%;">
+          <!-- KPI Grid -->
+          <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 28px;">
             
-            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
-              <div style="position: absolute; right: 16px; bottom: 16px; color: #0f172a; opacity: 0.07;">
-                <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            <div style="background: #ffffff; border-radius: 20px; padding: 24px 26px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Active Clients</div>
+                  <div style="font-size: 2.3rem; font-weight: 800; color: #0f172a; line-height: 1.1; margin: 8px 0;">${summary.activeClients} / ${MOCK_CLIENTS.length}</div>
+                </div>
+                <div style="width: 40px; height: 40px; border-radius: 12px; background: #f8fafc; color: #64748b; display: flex; align-items: center; justify-content: center;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                </div>
               </div>
-              <div style="position: relative; z-index: 1;">
-                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Active Clients</div>
-                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">${summary.activeClients} / ${MOCK_CLIENTS.length}</div>
-                <div><span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">Organizations</span></div>
-              </div>
+              <div style="font-size: 0.8rem; color: #64748b;">Enterprise organizations onboarded</div>
             </div>
 
-            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
-              <div style="position: absolute; right: 16px; bottom: 16px; color: #0f172a; opacity: 0.07;">
-                <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <div style="background: #ffffff; border-radius: 20px; padding: 24px 26px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Total Billed Revenue</div>
+                  <div style="font-size: 2.3rem; font-weight: 800; color: #0f172a; line-height: 1.1; margin: 8px 0;">₹${summary.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                </div>
+                <div style="width: 40px; height: 40px; border-radius: 12px; background: #f0f9ff; color: #0284c7; display: flex; align-items: center; justify-content: center;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
               </div>
-              <div style="position: relative; z-index: 1;">
-                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Total Billed Revenue</div>
-                <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1; margin: 8px 0;">₹${summary.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                <div><span style="background: #e0f9ff; color: #0284c7; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">Client Billed</span></div>
-              </div>
+              <div style="font-size: 0.8rem; color: #64748b;">Across ${summary.totalCalls.toLocaleString()} total client calls</div>
             </div>
 
-            <div style="background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
-              <div style="position: absolute; right: 16px; bottom: 16px; color: #0f172a; opacity: 0.07;">
-                <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+            <div style="background: #ffffff; border-radius: 20px; padding: 24px 26px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.02); min-height: 140px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Total Agency Margin</div>
+                  <div style="font-size: 2.3rem; font-weight: 800; color: #16a34a; line-height: 1.1; margin: 8px 0;">+₹${totalMargin.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                </div>
+                <div style="width: 40px; height: 40px; border-radius: 12px; background: #ecfdf5; color: #16a34a; display: flex; align-items: center; justify-content: center;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+                </div>
               </div>
-              <div style="position: relative; z-index: 1;">
-                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">Total Margin</div>
-                <div style="font-size: 2.2rem; font-weight: 800; color: #059669; line-height: 1; margin: 8px 0;">+₹${totalMargin.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                <div><span style="background: #dcfce7; color: #15803d; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">Net Profit</span></div>
-              </div>
+              <div style="font-size: 0.8rem; color: #16a34a; font-weight: 600;">Gross Margin: ${((totalMargin / summary.totalRevenue) * 100).toFixed(1)}% net profit</div>
             </div>
 
           </div>
 
-          <div class="panel" style="background:#fff; border-radius:20px; padding:24px; border:1px solid #f1f5f9;">
-            <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-              <h2 class="panel-title" style="font-size:1.1rem; font-weight:700;">Client Breakdown</h2>
-              <button class="btn btn-primary btn-sm" id="btn-export-clients" style="background:#0ea5e9; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">
-                Export CSV
-              </button>
+          <!-- Client Accounts Table Panel -->
+          <div class="panel" style="background:#ffffff; border-radius:20px; padding:28px 30px; border:1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.02); margin-bottom: 28px;">
+            <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap: wrap; gap: 14px;">
+              <div>
+                <h2 class="panel-title" style="font-size:1.2rem; font-weight:800; color: #0f172a; margin: 0 0 4px 0;">Client Accounts & Billing Control</h2>
+                <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Configure client calling rates, billable markups, issue manual wallet recharges and generate tax invoices</p>
+              </div>
+              <div style="display: flex; gap: 10px;">
+                <button class="btn btn-secondary btn-sm" id="btn-export-clients" style="background:#fff; border: 1px solid #cbd5e1; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">
+                  Export CSV
+                </button>
+                <button class="btn btn-primary btn-sm" id="btn-create-client-invoice" style="background:#0ea5e9; border:none; padding:8px 18px; border-radius:8px; font-weight:700; color: #fff; cursor:pointer; display: flex; align-items: center; gap: 6px;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <span>Generate New Invoice</span>
+                </button>
+              </div>
             </div>
             
             <div style="overflow-x:auto;">
@@ -638,15 +669,16 @@ function renderClientTable(clients) {
   return `
     <table class="data-table" style="width:100%; border-collapse:collapse;">
       <thead>
-        <tr style="border-bottom:1px solid #f1f5f9; text-align:left; font-size:0.75rem; color:#64748b;">
-          <th style="padding:12px 16px;">Client</th>
-          <th style="padding:12px 16px;">Status</th>
-          <th style="padding:12px 16px;">Active Agents</th>
-          <th style="padding:12px 16px;">Total Calls</th>
-          <th style="padding:12px 16px;">Duration (min)</th>
-          <th style="padding:12px 16px;">Platform Cost</th>
-          <th style="padding:12px 16px;">Client Billed</th>
-          <th style="padding:12px 16px;">Margin</th>
+        <tr style="border-bottom:1px solid #e2e8f0; text-align:left; font-size:0.75rem; color:#64748b; text-transform: uppercase; letter-spacing: 0.04em;">
+          <th style="padding:14px 16px;">Client Organization</th>
+          <th style="padding:14px 16px;">Status</th>
+          <th style="padding:14px 16px;">Active Agents</th>
+          <th style="padding:14px 16px;">Total Calls</th>
+          <th style="padding:14px 16px;">Duration (min)</th>
+          <th style="padding:14px 16px;">Platform Cost</th>
+          <th style="padding:14px 16px;">Client Billed</th>
+          <th style="padding:14px 16px;">Agency Margin</th>
+          <th style="padding:14px 16px;">Quick Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -654,20 +686,38 @@ function renderClientTable(clients) {
           const margin = c.revenue - c.cost;
           const marginPercent = ((margin / c.revenue) * 100).toFixed(1);
           return `
-            <tr style="border-bottom:1px solid #f8fafc; font-size:0.85rem;">
-              <td style="padding:12px 16px;">
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <div style="width:28px; height:28px; border-radius:50%; background:${c.bg}; color:${c.color}; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75rem;">${c.initials}</div>
-                  <span style="font-weight:600; color:#0f172a;">${c.name}</span>
+            <tr style="border-bottom:1px solid #f1f5f9; font-size:0.88rem;">
+              <td style="padding:14px 16px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <div style="width:32px; height:32px; border-radius:8px; background:${c.bg}; color:${c.color}; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.8rem;">${c.initials}</div>
+                  <div>
+                    <div style="font-weight:700; color:#0f172a;">${c.name}</div>
+                    <div style="font-size:0.75rem; color:#64748b;">ID: ${c.id} • Rate: ${c.rateMultiplier}x</div>
+                  </div>
                 </div>
               </td>
-              <td style="padding:12px 16px;"><span style="background:${c.status === 'active' ? '#dcfce7' : '#fee2e2'}; color:${c.status === 'active' ? '#15803d' : '#991b1b'}; padding:2px 8px; border-radius:4px; font-size:0.72rem; font-weight:700;">${c.status.toUpperCase()}</span></td>
-              <td style="padding:12px 16px;">${c.agents}</td>
-              <td style="padding:12px 16px;">${c.calls.toLocaleString()}</td>
-              <td style="padding:12px 16px;">${c.minutes.toLocaleString()}</td>
-              <td style="padding:12px 16px; color:#64748b;">₹${c.cost.toFixed(2)}</td>
-              <td style="padding:12px 16px; font-weight:600; color:#0f172a;">₹${c.revenue.toFixed(2)}</td>
-              <td style="padding:12px 16px; font-weight:700; color:#10b981;">+₹${margin.toFixed(2)} (${marginPercent}%)</td>
+              <td style="padding:14px 16px;">
+                <span style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.8rem; color: ${c.status === 'active' ? '#16a34a' : '#94a3b8'};">
+                  <span style="width: 8px; height: 8px; border-radius: 50%; background: ${c.status === 'active' ? '#16a34a' : '#94a3b8'};"></span>
+                  ${c.status === 'active' ? 'Active' : 'Inactive'}
+                </span>
+              </td>
+              <td style="padding:14px 16px; font-weight:600; color:#0f172a;">${c.agents}</td>
+              <td style="padding:14px 16px; color:#475569;">${c.calls.toLocaleString()}</td>
+              <td style="padding:14px 16px; color:#475569;">${c.minutes.toLocaleString()}</td>
+              <td style="padding:14px 16px; color:#64748b;">₹${c.cost.toFixed(2)}</td>
+              <td style="padding:14px 16px; font-weight:700; color:#0f172a;">₹${c.revenue.toFixed(2)}</td>
+              <td style="padding:14px 16px; font-weight:800; color:#16a34a;">+₹${margin.toFixed(2)} <span style="font-size:0.75rem; font-weight:600; color:#64748b;">(${marginPercent}%)</span></td>
+              <td style="padding:14px 16px;">
+                <div style="display: flex; gap: 8px;">
+                  <button class="btn-agency-add-credit" data-client="${c.name}" style="background: #f0f9ff; border: 1px solid #bae6fd; color: #0284c7; padding: 5px 10px; border-radius: 6px; font-weight: 700; font-size: 0.78rem; cursor: pointer;">
+                    + Credit
+                  </button>
+                  <button class="btn-agency-invoice" data-client="${c.name}" data-amount="${c.revenue}" style="background: #f8fafc; border: 1px solid #cbd5e1; color: #0f172a; padding: 5px 10px; border-radius: 6px; font-weight: 700; font-size: 0.78rem; cursor: pointer;">
+                    Invoice
+                  </button>
+                </div>
+              </td>
             </tr>
           `;
         }).join('')}
@@ -679,10 +729,18 @@ function renderClientTable(clients) {
 export async function initClientBilling(session, navigate) {
   const user = session?.user || session;
   const isClient = (user?.role || '').toLowerCase() === 'client';
+  const override = localStorage.getItem('seevora_billing_view_override');
+  const effectiveClient = override ? (override === 'client') : isClient;
 
   // Client-specific recharge logic
-  if (isClient) {
+  if (effectiveClient) {
     let selectedAmount = 1000;
+
+    // Back to Agency Portal button (when admin is previewing)
+    document.getElementById('btn-back-to-agency')?.addEventListener('click', () => {
+      localStorage.removeItem('seevora_billing_view_override');
+      navigate('client-billing');
+    });
 
     // Preset Amount Buttons
     document.querySelectorAll('.btn-topup-option').forEach(btn => {
@@ -931,6 +989,53 @@ export async function initClientBilling(session, navigate) {
 
     return;
   }
+
+  // ── Agency Admin View Handlers ─────────────────────────────
+  // View switcher: switch to client portal preview
+  document.getElementById('btn-toggle-client-portal')?.addEventListener('click', () => {
+    localStorage.setItem('seevora_billing_view_override', 'client');
+    navigate('client-billing');
+  });
+
+  // Admin generate new client invoice
+  document.getElementById('btn-create-client-invoice')?.addEventListener('click', () => {
+    import('../components/toast.js').then(({ showToast }) => {
+      showToast({
+        type: 'success',
+        title: 'GST Tax Invoice Generated! 📄',
+        message: 'Invoice INV-2026-9284 generated for Acme Corp (₹14,692.77 incl. 18% GST).'
+      });
+    });
+  });
+
+  // Quick action: Add Credit
+  document.querySelectorAll('.btn-agency-add-credit').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const client = btn.dataset.client;
+      import('../components/toast.js').then(({ showToast }) => {
+        showToast({
+          type: 'success',
+          title: 'Wallet Recharged! 💳',
+          message: `₹2,500 calling credits credited to ${client}.`
+        });
+      });
+    });
+  });
+
+  // Quick action: Invoice
+  document.querySelectorAll('.btn-agency-invoice').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const client = btn.dataset.client;
+      const amount = btn.dataset.amount;
+      import('../components/toast.js').then(({ showToast }) => {
+        showToast({
+          type: 'info',
+          title: 'Invoice Drafted',
+          message: `Drafted invoice for ${client}: ₹${parseFloat(amount).toLocaleString()} + 18% GST.`
+        });
+      });
+    });
+  });
 
   // Admin export
   document.getElementById('btn-export-clients')?.addEventListener('click', () => {

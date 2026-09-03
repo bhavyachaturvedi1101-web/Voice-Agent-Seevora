@@ -13,9 +13,13 @@ export function hashPassword(password) {
 
 // ── Users ───────────────────────────────────────────────────
 export const USERS = [
-  { id: 'u1', email: 'admin@test.com',    passwordHash: hashPassword('admin123'),  name: 'Alex Morgan',   role: 'Admin',  initials: 'AM', businessName: 'Seevora AI' },
-  { id: 'u2', email: 'viewer@seevora.ai', passwordHash: hashPassword('Viewer123!'), name: 'Sam Rivera',    role: 'Viewer', initials: 'SR', businessName: 'Seevora AI' },
+  { id: 'u1', email: 'admin@test.com',    passwordHash: hashPassword('admin123'),  name: 'Alex Morgan',   role: 'Admin',  initials: 'AM', businessName: 'Seevora AI', walletBalance: 50000, plan: 'Enterprise' },
+  { id: 'u1-alias1', email: 'admin@seevora.com', passwordHash: hashPassword('admin123'), name: 'Alex Morgan', role: 'Admin', initials: 'AM', businessName: 'Seevora AI', walletBalance: 50000, plan: 'Enterprise' },
+  { id: 'u1-alias2', email: 'admin@seevora.ai', passwordHash: hashPassword('admin123'), name: 'Alex Morgan', role: 'Admin', initials: 'AM', businessName: 'Seevora AI', walletBalance: 50000, plan: 'Enterprise' },
+  { id: 'u2', email: 'viewer@seevora.ai', passwordHash: hashPassword('Viewer123!'), name: 'Sam Rivera',    role: 'Viewer', initials: 'SR', businessName: 'Seevora AI', walletBalance: 1000, plan: 'Viewer' },
   { id: 'u3', email: 'client@test.com',   passwordHash: hashPassword('client123'), name: 'Rahul Sharma', role: 'Client', initials: 'RS', businessName: 'Sharma Real Estate', walletBalance: 500, plan: 'Self-Serve Starter' },
+  { id: 'u3-alias1', email: 'client@seevora.com', passwordHash: hashPassword('client123'), name: 'Rahul Sharma', role: 'Client', initials: 'RS', businessName: 'Sharma Real Estate', walletBalance: 500, plan: 'Self-Serve Starter' },
+  { id: 'u3-alias2', email: 'client@seevora.ai', passwordHash: hashPassword('client123'), name: 'Rahul Sharma', role: 'Client', initials: 'RS', businessName: 'Sharma Real Estate', walletBalance: 500, plan: 'Self-Serve Starter' },
 ];
 
 // ── Agents (with real UUID-style IDs) ──────────────────────

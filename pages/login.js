@@ -55,9 +55,25 @@ export function renderLogin(onSuccess) {
             <span id="login-btn-text">Log In</span>
             <span id="login-btn-spinner" class="hidden spinner" style="border-top-color:#fff;"></span>
           </button>
+
+          <!-- 1-Click Quick Demo Login for Vercel -->
+          <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.4); text-align: center;">
+            <div style="font-size: 0.72rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Instant 1-Click Login</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <button type="button" id="btn-quick-admin" style="padding: 9px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.8); background: rgba(255,255,255,0.85); color: #0f172a; font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                <span>⚡ Admin Demo</span>
+              </button>
+              <button type="button" id="btn-quick-client" style="padding: 9px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.8); background: rgba(255,255,255,0.85); color: #0284c7; font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                <span>💼 Client Demo</span>
+              </button>
+            </div>
+            <div style="font-size: 0.72rem; color: #64748b; margin-top: 8px;">
+              Admin: <strong>admin@test.com</strong> • Client: <strong>client@test.com</strong>
+            </div>
+          </div>
         </form>
 
-        <div style="margin-top: 32px; font-size: 0.85rem; color: #6b7280; text-align: center;">
+        <div style="margin-top: 24px; font-size: 0.85rem; color: #6b7280; text-align: center;">
           Don't have an account? <span id="signup-link" style="font-weight:600; color: #0ea5e9; cursor: pointer;">Sign up</span>
         </div>
 
@@ -105,6 +121,19 @@ export function initLogin(onSuccess, onSignup) {
     pw.type = pw.type === 'password' ? 'text' : 'password';
   });
 
+  // 1-Click Quick Demo Login buttons
+  document.getElementById('btn-quick-admin')?.addEventListener('click', () => {
+    if (email) email.value = 'admin@test.com';
+    if (pw) pw.value = 'admin123';
+    form?.requestSubmit ? form.requestSubmit() : form?.dispatchEvent(new Event('submit', { cancelable: true }));
+  });
+
+  document.getElementById('btn-quick-client')?.addEventListener('click', () => {
+    if (email) email.value = 'client@test.com';
+    if (pw) pw.value = 'client123';
+    form?.requestSubmit ? form.requestSubmit() : form?.dispatchEvent(new Event('submit', { cancelable: true }));
+  });
+
   // Sign Up link — direct ID selector
   document.getElementById('signup-link')?.addEventListener('click', () => {
     if (onSignup) onSignup();
@@ -142,28 +171,33 @@ export function initLogin(onSuccess, onSignup) {
       const data = await login(email.value.trim(), pw.value);
       const token = data.access_token || data.token;
 
-      // Decode JWT payload (middle part) to get user info
-      let userInfo = {};
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        userInfo = {
-          userId: payload.userId,
-          name: payload.name || 'User',
-          email: payload.email || email.value.trim(),
-          role: payload.role || 'Client',
-          initials: (payload.initials || (payload.name || 'U').slice(0, 1)).toUpperCase(),
-          businessName: payload.businessName || '',
-          walletBalance: payload.walletBalance !== undefined ? payload.walletBalance : (payload.role === 'Admin' ? 50000 : 500),
-          plan: payload.plan || (payload.role === 'Admin' ? 'Enterprise' : 'Self-Serve Starter'),
-        };
-      } catch {
-        userInfo = { name: 'Admin', email: email.value.trim(), role: 'Admin', initials: 'AD', businessName: 'Seevora AI', walletBalance: 50000, plan: 'Enterprise' };
+      // Extract user info either directly from response or safely decoded JWT payload
+      let payload = data.user;
+      if (!payload && token) {
+        try {
+          const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+          payload = JSON.parse(decodeURIComponent(escape(atob(b64))));
+        } catch {
+          payload = {};
+        }
       }
+      payload = payload || {};
+
+      const userInfo = {
+        userId: payload.userId || 'u1',
+        name: payload.name || 'User',
+        email: payload.email || email.value.trim(),
+        role: payload.role || 'Admin',
+        initials: (payload.initials || (payload.name || 'U').slice(0, 1)).toUpperCase(),
+        businessName: payload.businessName || '',
+        walletBalance: payload.walletBalance !== undefined ? payload.walletBalance : (payload.role === 'Admin' ? 50000 : 500),
+        plan: payload.plan || (payload.role === 'Admin' ? 'Enterprise' : 'Self-Serve Starter'),
+      };
 
       const session = { ...userInfo, user: userInfo, token, access_token: token, loginTime: Date.now() };
       localStorage.setItem('seevora_session', JSON.stringify(session));
 
-      showToast({ type: 'success', title: `Welcome ${userInfo.role}` });
+      showToast({ type: 'success', title: `Welcome, ${userInfo.name}!` });
 
       // Cleanup 3D scene before navigating away
       if (orbContext) {
@@ -171,7 +205,7 @@ export function initLogin(onSuccess, onSignup) {
         orbContext = null;
       }
 
-      setTimeout(() => onSuccess(session), 300);
+      setTimeout(() => onSuccess(session), 250);
     } catch (error) {
       err.classList.remove('hidden');
       errTxt.textContent = error.message || 'Invalid email or password. Please try again.';
