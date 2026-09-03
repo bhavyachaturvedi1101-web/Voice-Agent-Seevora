@@ -12,6 +12,11 @@ import {
   addCall,
   getPricingSummary,
   getDailySpend,
+  addUser,
+  saveOnboarding,
+  getOnboarding,
+  saveTrainingRecording,
+  getTrainingRecordings,
 } from '../backend/data.js';
 
 const app = express();
@@ -76,6 +81,9 @@ function handleLogin(req, res) {
     email:    user.email,
     role:     user.role,
     initials: user.initials,
+    businessName: user.businessName || '',
+    walletBalance: user.walletBalance !== undefined ? user.walletBalance : (user.role === 'Admin' ? 50000 : 500),
+    plan: user.plan || (user.role === 'Admin' ? 'Enterprise' : 'Self-Serve Starter'),
   };
   // API docs return { access_token }; also return { token, user } for dashboard session
   const access_token = jwt.sign(payload, JWT_SECRET, { expiresIn: '12h' });
@@ -84,6 +92,48 @@ function handleLogin(req, res) {
 
 app.post('/auth/login', handleLogin);
 app.post('/api/login', handleLogin);     // legacy alias
+
+// ── POST /auth/signup ────────────────────────────────────
+app.post('/auth/signup', (req, res) => {
+  const { firstName, lastName, email, password, businessName } = req.body;
+  if (!firstName || !email || !password) {
+    return res.status(400).json({ error: 'firstName, email and password are required' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  }
+  const existing = USERS.find(u => u.email === email);
+  if (existing) {
+    return res.status(409).json({ error: 'An account with this email already exists' });
+  }
+  const name = `${firstName} ${lastName || ''}`.trim();
+  const initials = (firstName[0] + (lastName ? lastName[0] : '')).toUpperCase();
+  const newUser = {
+    id: crypto.randomUUID(),
+    email,
+    passwordHash: hashPassword(password),
+    name,
+    role: 'Client',
+    initials,
+    businessName: businessName || '',
+    walletBalance: 500,
+    plan: 'Self-Serve Starter',
+    createdAt: new Date().toISOString(),
+  };
+  addUser(newUser);
+  const payload = {
+    userId: newUser.id,
+    name: newUser.name,
+    email: newUser.email,
+    role: newUser.role,
+    initials: newUser.initials,
+    businessName: newUser.businessName,
+    walletBalance: newUser.walletBalance,
+    plan: newUser.plan,
+  };
+  const access_token = jwt.sign(payload, JWT_SECRET, { expiresIn: '12h' });
+  res.status(201).json({ access_token, token: access_token, user: payload });
+});
 
 // ── GET /calls  (matches API docs) ────────────────────────
 // Query params: agent_id, direction, skip, limit
@@ -217,9 +267,79 @@ app.get('/api/pricing', requireAuth, (req, res) => {
   res.json({ summary, daily });
 });
 
-// ── GET /api/agents ───────────────────────────────────────
+// ── GET /api/agents ─────────────────────────────────────
 app.get('/api/agents', requireAuth, (req, res) => {
   res.json(AGENTS.map(({ id, name, script, rate_rs }) => ({ id, name, script, rate_rs })));
+});
+
+// ── POST /api/onboarding ────────────────────────────────
+app.post('/api/onboarding', requireAuth, (req, res) => {
+  const onboardingData = { ...req.body, userId: req.user.userId, savedAt: new Date().toISOString() };
+  saveOnboarding(req.user.userId, onboardingData);
+  res.status(201).json({ success: true, message: 'Business profile saved.' });
+});
+
+// ── GET /api/onboarding ────────────────────────────────
+app.get('/api/onboarding', requireAuth, (req, res) => {
+  const data = getOnboarding(req.user.userId);
+  if (!data) return res.status(404).json({ error: 'No onboarding data found' });
+  res.json(data);
+});
+
+// ── POST /api/leads/upload ─────────────────────────────
+// Accepts a JSON array of lead objects parsed from Excel on the frontend
+app.post('/api/leads/upload', requireAuth, (req, res) => {
+  const { leads } = req.body;
+  if (!Array.isArray(leads) || leads.length === 0) {
+    return res.status(400).json({ error: 'leads must be a non-empty array' });
+  }
+  // Validate basic structure
+  const valid = leads.filter(l => l.phone || l.phone_number);
+  if (valid.length === 0) {
+    return res.status(400).json({ error: 'No leads with phone numbers found' });
+  }
+  // Return the validated leads for dispatching
+  res.json({ success: true, count: valid.length, leads: valid });
+});
+
+// ── POST /api/agents/:id/training ────────────────────────
+// Accepts metadata about uploaded recordings (file parsed client-side)
+app.post('/api/agents/:id/training', requireAuth, (req, res) => {
+  const { id } = req.params;
+  const agent = AGENTS.find(a => a.id === id);
+  if (!agent) return res.status(404).json({ error: 'Agent not found' });
+
+  const { recordings } = req.body;   // [{ name, size, duration, type }]
+  if (!Array.isArray(recordings) || recordings.length === 0) {
+    return res.status(400).json({ error: 'recordings array is required' });
+  }
+
+  const saved = recordings.map(r => ({
+    id: crypto.randomUUID(),
+    agentId: id,
+    name: r.name,
+    size: r.size,
+    duration: r.duration || null,
+    type: r.type,
+    status: 'processing',
+    uploadedAt: new Date().toISOString(),
+  }));
+
+  saveTrainingRecording(id, saved);
+
+  // Simulate processing completion after 10 seconds
+  setTimeout(() => {
+    saved.forEach(r => { r.status = 'trained'; });
+  }, 10000);
+
+  res.status(201).json({ success: true, recordings: saved });
+});
+
+// ── GET /api/agents/:id/training ────────────────────────
+app.get('/api/agents/:id/training', requireAuth, (req, res) => {
+  const { id } = req.params;
+  const recordings = getTrainingRecordings(id);
+  res.json({ agentId: id, recordings });
 });
 
 // ── Health check ──────────────────────────────────────────

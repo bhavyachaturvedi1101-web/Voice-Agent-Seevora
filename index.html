@@ -37,6 +37,20 @@
     <!-- Rendered by router -->
   </div>
 
+  <!-- SVG filter: removes white background from logo images -->
+  <!-- White pixels → transparent; black pixels → opaque; works everywhere -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden;">
+    <defs>
+      <filter id="remove-white-bg" color-interpolation-filters="sRGB">
+        <feColorMatrix type="matrix"
+          values="1 0 0 0 0
+                  0 1 0 0 0
+                  0 0 1 0 0
+                  -1 -1 -1 2 0" />
+      </filter>
+    </defs>
+  </svg>
+
   <!-- Toast container -->
   <div id="toast-container" aria-live="polite"></div>
 

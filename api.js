@@ -4,10 +4,10 @@
 // ============================================================
 
 // ── Live API base URL ──────────────────────────────────────────────────────
-// Always use the real ngrok backend for all API calls.
-// Set NGROK_BASE_URL in .env (local) or Vercel env vars (production).
+// Use ngrok URL if explicitly configured, otherwise fall back to the current
+// page origin (works locally on localhost AND on any deployed domain).
 const LIVE_BASE = (window.__SEEVORA_CONFIG__ && window.__SEEVORA_CONFIG__.NGROK_BASE_URL)
-  || 'https://griminess-pry-visitor.ngrok-free.dev';
+  || window.location.origin;
 const API_BASE  = `${LIVE_BASE}/api`;
 
 // ── ngrok interstitial bypass header ──────────────────────

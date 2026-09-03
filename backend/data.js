@@ -13,8 +13,9 @@ export function hashPassword(password) {
 
 // ── Users ───────────────────────────────────────────────────
 export const USERS = [
-  { id: 'u1', email: 'admin@test.com',  passwordHash: hashPassword('admin123'),  name: 'Alex Morgan', role: 'Admin',  initials: 'AM' },
-  { id: 'u2', email: 'viewer@seevora.ai', passwordHash: hashPassword('Viewer123!'), name: 'Sam Rivera',  role: 'Viewer', initials: 'SR' },
+  { id: 'u1', email: 'admin@test.com',    passwordHash: hashPassword('admin123'),  name: 'Alex Morgan',   role: 'Admin',  initials: 'AM', businessName: 'Seevora AI' },
+  { id: 'u2', email: 'viewer@seevora.ai', passwordHash: hashPassword('Viewer123!'), name: 'Sam Rivera',    role: 'Viewer', initials: 'SR', businessName: 'Seevora AI' },
+  { id: 'u3', email: 'client@test.com',   passwordHash: hashPassword('client123'), name: 'Rahul Sharma', role: 'Client', initials: 'RS', businessName: 'Sharma Real Estate', walletBalance: 500, plan: 'Self-Serve Starter' },
 ];
 
 // ── Agents (with real UUID-style IDs) ──────────────────────
@@ -256,4 +257,35 @@ export function getDailySpend(calls, days = 30) {
   const labels = Object.keys(buckets).reverse();
   const values = labels.map(k => parseFloat(buckets[k].toFixed(2)));
   return { labels, values };
+}
+
+// ── Users Store (mutable — supports signup) ─────────────────
+export const USERS_STORE = [...USERS];
+
+export function addUser(user) {
+  USERS_STORE.push(user);
+  USERS.push(user); // keep USERS array in sync for login checks
+}
+
+// ── Onboarding Store ────────────────────────────────────────
+const _onboarding = {};   // { userId: onboardingData }
+
+export function saveOnboarding(userId, data) {
+  _onboarding[userId] = data;
+}
+
+export function getOnboarding(userId) {
+  return _onboarding[userId] || null;
+}
+
+// ── Training Recordings Store ───────────────────────────────
+const _trainingRecordings = {};   // { agentId: [recording, ...] }
+
+export function saveTrainingRecording(agentId, recordings) {
+  if (!_trainingRecordings[agentId]) _trainingRecordings[agentId] = [];
+  _trainingRecordings[agentId].push(...recordings);
+}
+
+export function getTrainingRecordings(agentId) {
+  return _trainingRecordings[agentId] || [];
 }

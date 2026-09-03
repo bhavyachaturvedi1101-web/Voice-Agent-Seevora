@@ -3,6 +3,8 @@
 // ============================================================
 
 import { renderLogin, initLogin }           from './pages/login.js';
+import { renderSignup, initSignup }         from './pages/signup.js';
+import { renderOnboarding, initOnboarding } from './pages/onboarding.js';
 import { renderDashboard, initDashboard }   from './pages/dashboard.js';
 import { renderOutbound, initOutbound }     from './pages/outbound.js';
 import { renderInbound, initInbound }       from './pages/inbound.js';
@@ -21,12 +23,6 @@ function getSession() {
     if (!raw) return null;
     const s = JSON.parse(raw);
     
-    // Fix existing sessions with UUID names
-    if (s.name && s.name.length > 20 && s.name.includes('-')) {
-      s.name = 'Admin';
-      s.initials = 'A';
-    }
-    
     // Auto-logout after 30 min inactivity
     if (Date.now() - s.loginTime > 30 * 60 * 1000) {
       localStorage.removeItem('seevora_session');
@@ -34,22 +30,49 @@ function getSession() {
     }
     // Refresh timestamp on activity
     s.loginTime = Date.now();
+    
+    // Normalize user object so all components have clean role & business data
+    if (!s.user) {
+      s.user = {
+        userId: s.userId || s.id,
+        name: s.name || 'User',
+        email: s.email || '',
+        role: s.role || 'Client',
+        initials: s.initials || 'U',
+        businessName: s.businessName || '',
+        walletBalance: s.walletBalance !== undefined ? s.walletBalance : 500,
+        plan: s.plan || 'Self-Serve Starter'
+      };
+    }
     localStorage.setItem('seevora_session', JSON.stringify(s));
     return s;
   } catch { return null; }
 }
 
 // ── Router ─────────────────────────────────────────────────
+const PUBLIC_ROUTES = ['login', 'signup', 'onboarding'];
+
 function navigate(route, params = {}) {
   const session = getSession();
 
-  if (route === 'login') {
-    renderPage('login', null, params);
+  if (PUBLIC_ROUTES.includes(route)) {
+    renderPage(route, session, params);
     return;
   }
 
   if (!session) {
     renderPage('login', null, params);
+    return;
+  }
+
+  // Client Route Guard: Prevent clients from accessing internal agency tools or system infra logs
+  const isClient = (session.user?.role || session.role || '').toLowerCase() === 'client';
+  const ADMIN_ONLY_ROUTES = ['unified', 'pricing'];
+  if (isClient && ADMIN_ONLY_ROUTES.includes(route)) {
+    import('./components/toast.js').then(({ showToast }) => {
+      showToast({ type: 'warning', title: 'Admin Area Restricted', message: 'This section is reserved for platform administrators.' });
+    });
+    renderPage('dashboard', session, params);
     return;
   }
 
@@ -60,16 +83,34 @@ async function renderPage(route, session, params = {}) {
   // Scroll to top
   window.scrollTo(0, 0);
 
+  const currentUser = session?.user || session;
+
   try {
     switch (route) {
       case 'login':
         app.innerHTML = await renderLogin();
-        initLogin((sess) => navigate('dashboard'));
+        initLogin(
+          (sess) => navigate('dashboard'),
+          () => navigate('signup')
+        );
         break;
-      
+
+      case 'signup':
+        app.innerHTML = renderSignup();
+        initSignup(
+          (sess) => navigate('onboarding'),   // after signup → onboarding
+          () => navigate('login')             // go back to login
+        );
+        break;
+
+      case 'onboarding':
+        app.innerHTML = renderOnboarding(session, navigate);
+        initOnboarding(session, navigate);
+        break;
+
       case 'dashboard':
-        app.innerHTML = renderDashboard(session.user);
-        initDashboard();
+        app.innerHTML = renderDashboard(currentUser, navigate);
+        initDashboard(currentUser, navigate);
         break;
 
       case 'outbound':
@@ -94,7 +135,7 @@ async function renderPage(route, session, params = {}) {
 
       case 'agents':
         app.innerHTML = await renderAgents(session, navigate);
-        initAgents(session, navigate);
+        initAgents(session, navigate, params);
         break;
 
       case 'client-billing':

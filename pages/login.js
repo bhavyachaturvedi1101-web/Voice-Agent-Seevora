@@ -17,17 +17,15 @@ export function renderLogin(onSuccess) {
         
         <!-- Logo -->
         <div style="display:flex; align-items:center; margin-bottom: 20px;">
-          <!-- Custom audio wave icon -->
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2v20M16 6v12M8 6v12M20 9v6M4 9v6" stroke="#4f46e5" stroke-width="2.5" stroke-linecap="round"/>
-          </svg>
+          <img src="/assets/logo.png" alt="Seevora" style="width: 38px; height: 38px; object-fit: contain; filter: url(#remove-white-bg);" />
           <span style="font-size: 2rem; font-weight: 800; color: #0f172a; margin-left: 10px; font-family: Inter, sans-serif; letter-spacing: -0.02em;">Seevora</span>
         </div>
           <h1 style="color: #111827; font-size: 1.8rem; font-weight: 700; margin-bottom: 6px; margin-top: 0; font-family: Inter, sans-serif;">AI Voice Agent</h1>
           <p style="color: #6b7280; margin-bottom: 32px; font-size: 0.9rem; margin-top: 0;">Your voice. Our AI. Infinite possibilities.</p>
 
         <!-- Error message -->
-        <div class="login-error hidden" id="login-error" style="background: rgba(239,68,68,0.2); color: #fff; padding: 12px; border-radius: 12px; font-size: 0.85rem; margin-bottom: 16px; border: 1px solid rgba(239,68,68,0.3);">
+        <div class="login-error hidden" id="login-error" style="background: #fee2e2; color: #991b1b; font-weight: 600; padding: 12px 14px; border-radius: 12px; font-size: 0.85rem; margin-bottom: 16px; border: 1px solid #fca5a5; display: flex; align-items: center; gap: 8px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <span id="login-error-text">Invalid credentials.</span>
         </div>
 
@@ -53,14 +51,14 @@ export function renderLogin(onSuccess) {
             <span class="l-forgot" id="forgot-password-link" style="font-size: 0.8rem; color: #6b7280; cursor: pointer; text-decoration: none;">Forgot password?</span>
           </div>
 
-          <button type="submit" class="l-submit" id="login-submit-btn" style="width: 100%; padding: 14px; background: #3b82f6; color: #fff; border: none; border-radius: 12px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: background 0.2s; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);">
+          <button type="submit" class="l-submit" id="login-submit-btn" style="width: 100%; padding: 14px; background: #0ea5e9; color: #fff; border: none; border-radius: 12px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: background 0.2s; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);">
             <span id="login-btn-text">Log In</span>
             <span id="login-btn-spinner" class="hidden spinner" style="border-top-color:#fff;"></span>
           </button>
         </form>
 
         <div style="margin-top: 32px; font-size: 0.85rem; color: #6b7280; text-align: center;">
-          Don't have an account? <span style="font-weight:600; color: #3b82f6; cursor: pointer;">Sign up</span>
+          Don't have an account? <span id="signup-link" style="font-weight:600; color: #0ea5e9; cursor: pointer;">Sign up</span>
         </div>
 
       </div>
@@ -92,7 +90,7 @@ export function renderLogin(onSuccess) {
   `;
 }
 
-export function initLogin(onSuccess) {
+export function initLogin(onSuccess, onSignup) {
   const form = document.getElementById('login-form');
   const email = document.getElementById('login-email');
   const pw = document.getElementById('login-password');
@@ -105,6 +103,11 @@ export function initLogin(onSuccess) {
   // Toggle password visibility
   document.getElementById('toggle-pw')?.addEventListener('click', () => {
     pw.type = pw.type === 'password' ? 'text' : 'password';
+  });
+
+  // Sign Up link — direct ID selector
+  document.getElementById('signup-link')?.addEventListener('click', () => {
+    if (onSignup) onSignup();
   });
 
   // Forgot password
@@ -144,14 +147,20 @@ export function initLogin(onSuccess) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         userInfo = {
-          name: payload.name || 'Admin',
+          userId: payload.userId,
+          name: payload.name || 'User',
           email: payload.email || email.value.trim(),
-          role: payload.role || 'Admin',
-          initials: (payload.name || 'A').slice(0, 1).toUpperCase(),
+          role: payload.role || 'Client',
+          initials: (payload.initials || (payload.name || 'U').slice(0, 1)).toUpperCase(),
+          businessName: payload.businessName || '',
+          walletBalance: payload.walletBalance !== undefined ? payload.walletBalance : (payload.role === 'Admin' ? 50000 : 500),
+          plan: payload.plan || (payload.role === 'Admin' ? 'Enterprise' : 'Self-Serve Starter'),
         };
-      } catch { userInfo = { name: 'Admin', email: email.value.trim(), role: 'Admin', initials: 'AD' }; }
+      } catch {
+        userInfo = { name: 'Admin', email: email.value.trim(), role: 'Admin', initials: 'AD', businessName: 'Seevora AI', walletBalance: 50000, plan: 'Enterprise' };
+      }
 
-      const session = { ...userInfo, token, access_token: token, loginTime: Date.now() };
+      const session = { ...userInfo, user: userInfo, token, access_token: token, loginTime: Date.now() };
       localStorage.setItem('seevora_session', JSON.stringify(session));
 
       showToast({ type: 'success', title: `Welcome ${userInfo.role}` });
