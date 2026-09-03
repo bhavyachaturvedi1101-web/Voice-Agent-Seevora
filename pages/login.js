@@ -183,15 +183,18 @@ export function initLogin(onSuccess, onSignup) {
       }
       payload = payload || {};
 
+      const inferredRole = payload.role
+        || (email.value.toLowerCase().includes('client') ? 'Client' : 'Admin');
+
       const userInfo = {
         userId: payload.userId || 'u1',
         name: payload.name || 'User',
         email: payload.email || email.value.trim(),
-        role: payload.role || 'Admin',
-        initials: (payload.initials || (payload.name || 'U').slice(0, 1)).toUpperCase(),
+        role: inferredRole,
+        initials: (payload.initials || (payload.name || 'U').slice(0, 2)).toUpperCase(),
         businessName: payload.businessName || '',
-        walletBalance: payload.walletBalance !== undefined ? payload.walletBalance : (payload.role === 'Admin' ? 50000 : 500),
-        plan: payload.plan || (payload.role === 'Admin' ? 'Enterprise' : 'Self-Serve Starter'),
+        walletBalance: payload.walletBalance !== undefined ? payload.walletBalance : (inferredRole === 'Admin' ? 50000 : 500),
+        plan: payload.plan || (inferredRole === 'Admin' ? 'Enterprise' : 'Self-Serve Starter'),
       };
 
       const session = { ...userInfo, user: userInfo, token, access_token: token, loginTime: Date.now() };

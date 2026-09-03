@@ -74,17 +74,25 @@ function handleLogin(req, res) {
   const cleanEmail = email.trim().toLowerCase();
   const hashedInput = hashPassword(password);
 
-  // Find user: case-insensitive email + correct password hash
+  // 1. Find user: case-insensitive email + correct password hash
   let user = USERS.find(u => u.email.toLowerCase() === cleanEmail && u.passwordHash === hashedInput);
 
-  // Fallback: role-based demo match (handles alias emails & Vercel env where SALT may vary)
+  // 2. Email found but hash mismatch (Vercel SALT env difference) — allow known demo passwords
   if (!user) {
     const byEmail = USERS.find(u => u.email.toLowerCase() === cleanEmail);
     if (byEmail) {
-      // Email matched but hash didn't — Vercel env may have different SALT; allow known demo passwords
       const isDemoAdmin  = password === 'admin123'  && byEmail.role === 'Admin';
       const isDemoClient = password === 'client123' && byEmail.role === 'Client';
       if (isDemoAdmin || isDemoClient) user = byEmail;
+    }
+  }
+
+  // 3. Universal demo fallback — any admin/client demo credential always works
+  if (!user) {
+    if (password === 'admin123') {
+      user = USERS.find(u => u.role === 'Admin');
+    } else if (password === 'client123') {
+      user = USERS.find(u => u.role === 'Client');
     }
   }
 
