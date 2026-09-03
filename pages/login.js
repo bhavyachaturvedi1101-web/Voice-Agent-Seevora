@@ -56,21 +56,6 @@ export function renderLogin(onSuccess) {
             <span id="login-btn-spinner" class="hidden spinner" style="border-top-color:#fff;"></span>
           </button>
 
-          <!-- 1-Click Quick Demo Login for Vercel -->
-          <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.4); text-align: center;">
-            <div style="font-size: 0.72rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Instant 1-Click Login</div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-              <button type="button" id="btn-quick-admin" style="padding: 9px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.8); background: rgba(255,255,255,0.85); color: #0f172a; font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-                <span>⚡ Admin Demo</span>
-              </button>
-              <button type="button" id="btn-quick-client" style="padding: 9px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.8); background: rgba(255,255,255,0.85); color: #0284c7; font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-                <span>💼 Client Demo</span>
-              </button>
-            </div>
-            <div style="font-size: 0.72rem; color: #64748b; margin-top: 8px;">
-              Admin: <strong>admin@test.com</strong> • Client: <strong>client@test.com</strong>
-            </div>
-          </div>
         </form>
 
         <div style="margin-top: 24px; font-size: 0.85rem; color: #6b7280; text-align: center;">
@@ -119,19 +104,6 @@ export function initLogin(onSuccess, onSignup) {
   // Toggle password visibility
   document.getElementById('toggle-pw')?.addEventListener('click', () => {
     pw.type = pw.type === 'password' ? 'text' : 'password';
-  });
-
-  // 1-Click Quick Demo Login buttons
-  document.getElementById('btn-quick-admin')?.addEventListener('click', () => {
-    if (email) email.value = 'admin@test.com';
-    if (pw) pw.value = 'admin123';
-    form?.requestSubmit ? form.requestSubmit() : form?.dispatchEvent(new Event('submit', { cancelable: true }));
-  });
-
-  document.getElementById('btn-quick-client')?.addEventListener('click', () => {
-    if (email) email.value = 'client@test.com';
-    if (pw) pw.value = 'client123';
-    form?.requestSubmit ? form.requestSubmit() : form?.dispatchEvent(new Event('submit', { cancelable: true }));
   });
 
   // Sign Up link — direct ID selector
