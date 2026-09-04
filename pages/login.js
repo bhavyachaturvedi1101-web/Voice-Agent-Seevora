@@ -58,7 +58,26 @@ export function renderLogin(onSuccess) {
 
         </form>
 
-        <div style="margin-top: 24px; font-size: 0.85rem; color: #6b7280; text-align: center;">
+        <!-- 1-Click Demo Login Shortcuts -->
+        <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(0, 0, 0, 0.08);">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;">
+            <span style="height: 1px; flex: 1; background: rgba(0, 0, 0, 0.08);"></span>
+            <span style="font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em;">⚡ Quick Demo Access</span>
+            <span style="height: 1px; flex: 1; background: rgba(0, 0, 0, 0.08);"></span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <button type="button" id="btn-demo-admin" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 14px; background: #0f172a; color: #fff; border: none; border-radius: 12px; font-weight: 600; font-size: 0.82rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span>Admin Demo</span>
+            </button>
+            <button type="button" id="btn-demo-client" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 14px; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; border-radius: 12px; font-weight: 600; font-size: 0.82rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(14, 165, 233, 0.1);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <span>Client Demo</span>
+            </button>
+          </div>
+        </div>
+
+        <div style="margin-top: 20px; font-size: 0.85rem; color: #6b7280; text-align: center;">
           Don't have an account? <span id="signup-link" style="font-weight:600; color: #0ea5e9; cursor: pointer;">Sign up</span>
         </div>
 
@@ -131,16 +150,14 @@ export function initLogin(onSuccess, onSignup) {
     showToast({ type: 'success', title: 'Reset link sent', message: `Password reset link sent to ${val}` });
   });
 
-  // Form submit
-  form?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    err.classList.add('hidden');
-    btnTxt.classList.add('hidden');
-    btnSpinner.classList.remove('hidden');
-    btn.disabled = true;
+  const performLogin = async (emailVal, passVal) => {
+    err?.classList.add('hidden');
+    btnTxt?.classList.add('hidden');
+    btnSpinner?.classList.remove('hidden');
+    if (btn) btn.disabled = true;
 
     try {
-      const data = await login(email.value.trim(), pw.value);
+      const data = await login(emailVal.trim(), passVal);
       const token = data.access_token || data.token;
 
       // Extract user info either directly from response or safely decoded JWT payload
@@ -156,15 +173,15 @@ export function initLogin(onSuccess, onSignup) {
       payload = payload || {};
 
       const inferredRole = payload.role
-        || (email.value.toLowerCase().includes('client') ? 'Client' : 'Admin');
+        || (emailVal.toLowerCase().includes('client') ? 'Client' : 'Admin');
 
       const userInfo = {
-        userId: payload.userId || 'u1',
-        name: payload.name || 'User',
-        email: payload.email || email.value.trim(),
+        userId: payload.userId || (inferredRole === 'Client' ? 'u3' : 'u1'),
+        name: payload.name || (inferredRole === 'Client' ? 'Rahul Sharma' : 'Alex Morgan'),
+        email: payload.email || emailVal.trim(),
         role: inferredRole,
-        initials: (payload.initials || (payload.name || 'U').slice(0, 2)).toUpperCase(),
-        businessName: payload.businessName || '',
+        initials: (payload.initials || (inferredRole === 'Client' ? 'RS' : 'AM')).toUpperCase(),
+        businessName: payload.businessName || (inferredRole === 'Client' ? 'Sharma Real Estate' : 'Seevora AI'),
         walletBalance: payload.walletBalance !== undefined ? payload.walletBalance : (inferredRole === 'Admin' ? 50000 : 500),
         plan: payload.plan || (inferredRole === 'Admin' ? 'Enterprise' : 'Self-Serve Starter'),
       };
@@ -172,7 +189,7 @@ export function initLogin(onSuccess, onSignup) {
       const session = { ...userInfo, user: userInfo, token, access_token: token, loginTime: Date.now() };
       localStorage.setItem('seevora_session', JSON.stringify(session));
 
-      showToast({ type: 'success', title: `Welcome, ${userInfo.name}!` });
+      showToast({ type: 'success', title: `Welcome, ${userInfo.name}!`, message: `Logged in as ${inferredRole}` });
 
       // Cleanup 3D scene before navigating away
       if (orbContext) {
@@ -182,13 +199,34 @@ export function initLogin(onSuccess, onSignup) {
 
       setTimeout(() => onSuccess(session), 250);
     } catch (error) {
-      err.classList.remove('hidden');
-      errTxt.textContent = error.message || 'Invalid email or password. Please try again.';
-      btnTxt.classList.remove('hidden');
-      btnSpinner.classList.add('hidden');
-      btn.disabled = false;
-      pw.value = '';
-      pw.focus();
+      if (err) err.classList.remove('hidden');
+      if (errTxt) errTxt.textContent = error.message || 'Invalid email or password. Please try again.';
+      btnTxt?.classList.remove('hidden');
+      btnSpinner?.classList.add('hidden');
+      if (btn) btn.disabled = false;
+      if (pw) {
+        pw.value = '';
+        pw.focus();
+      }
     }
+  };
+
+  // Demo Login buttons
+  document.getElementById('btn-demo-admin')?.addEventListener('click', () => {
+    if (email) email.value = 'admin@test.com';
+    if (pw) pw.value = 'admin123';
+    performLogin('admin@test.com', 'admin123');
+  });
+
+  document.getElementById('btn-demo-client')?.addEventListener('click', () => {
+    if (email) email.value = 'client@test.com';
+    if (pw) pw.value = 'client123';
+    performLogin('client@test.com', 'client123');
+  });
+
+  // Form submit
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    performLogin(email.value, pw.value);
   });
 }
