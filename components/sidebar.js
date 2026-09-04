@@ -4,10 +4,9 @@
 
 export function renderSidebar(activeRoute, user) {
   const userName = user?.name || 'User';
-  const userInitials = user?.initials || 'U';
-  const userEmail = user?.email || '';
-  const isClient = (user?.role || '').toLowerCase() === 'client';
-  const businessName = user?.businessName || '';
+  const userEmail = user?.email || user?.user?.email || '';
+  const businessName = user?.businessName || user?.user?.businessName || '';
+  const isClient = (user?.role || user?.user?.role || '').toLowerCase() === 'client';
 
   const navLinks = isClient ? `
     <!-- Client Nav Links -->

@@ -44,6 +44,13 @@ function getSession() {
         plan: s.plan || 'Self-Serve Starter'
       };
     }
+    // Synchronize top-level fields so both session and currentUser have consistent role & details
+    s.role = s.user.role || s.role || 'Client';
+    s.name = s.user.name || s.name || 'User';
+    s.email = s.user.email || s.email || '';
+    s.initials = s.user.initials || s.initials || 'U';
+    s.businessName = s.user.businessName || s.businessName || '';
+
     localStorage.setItem('seevora_session', JSON.stringify(s));
     return s;
   } catch { return null; }
@@ -104,8 +111,8 @@ async function renderPage(route, session, params = {}) {
         break;
 
       case 'onboarding':
-        app.innerHTML = renderOnboarding(session, navigate);
-        initOnboarding(session, navigate);
+        app.innerHTML = renderOnboarding(currentUser, navigate);
+        initOnboarding(currentUser, navigate);
         break;
 
       case 'dashboard':
@@ -114,38 +121,38 @@ async function renderPage(route, session, params = {}) {
         break;
 
       case 'outbound':
-        app.innerHTML = await renderOutbound(session, navigate);
-        initOutbound(session, navigate);
+        app.innerHTML = await renderOutbound(currentUser, navigate);
+        initOutbound(currentUser, navigate);
         break;
 
       case 'inbound':
-        app.innerHTML = await renderInbound(session, navigate);
-        initInbound(session, navigate);
+        app.innerHTML = await renderInbound(currentUser, navigate);
+        initInbound(currentUser, navigate);
         break;
 
       case 'inbound-detail':
-        app.innerHTML = await renderInboundDetail(session, navigate, params);
-        initInboundDetail(session, navigate, params);
+        app.innerHTML = await renderInboundDetail(currentUser, navigate, params);
+        initInboundDetail(currentUser, navigate, params);
         break;
 
       case 'pricing':
-        app.innerHTML = await renderPricing(session, navigate);
-        initPricing(session, navigate);
+        app.innerHTML = await renderPricing(currentUser, navigate);
+        initPricing(currentUser, navigate);
         break;
 
       case 'agents':
-        app.innerHTML = await renderAgents(session, navigate);
-        initAgents(session, navigate, params);
+        app.innerHTML = await renderAgents(currentUser, navigate);
+        initAgents(currentUser, navigate, params);
         break;
 
       case 'client-billing':
-        app.innerHTML = await renderClientBilling(session, navigate);
-        initClientBilling(session, navigate);
+        app.innerHTML = await renderClientBilling(currentUser, navigate);
+        initClientBilling(currentUser, navigate);
         break;
 
       case 'unified':
-        app.innerHTML = await renderUnified(session, navigate);
-        initUnified(session, navigate);
+        app.innerHTML = await renderUnified(currentUser, navigate);
+        initUnified(currentUser, navigate);
         break;
 
       default:

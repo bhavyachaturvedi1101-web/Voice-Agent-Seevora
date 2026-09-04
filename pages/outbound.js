@@ -196,7 +196,13 @@ export async function renderOutbound(user, navigate) {
   // Fetch agents from real API (populates AGENTS in api.js too)
   await fetchAgents().catch(() => { });
 
-  const calls = await getOutboundCalls();
+  let calls = [];
+  try {
+    calls = await getOutboundCalls();
+  } catch (err) {
+    console.warn('[renderOutbound] Failed to get calls:', err);
+  }
+  calls = Array.isArray(calls) ? calls : [];
   const totalCalls = calls.length;
   const completed = calls.filter(c => c.status === 'completed').length;
   const inProgress = calls.filter(c => c.status === 'in-progress' || c.status === 'calling').length;
@@ -524,7 +530,13 @@ export async function renderOutbound(user, navigate) {
 
 
 export async function initOutbound(user, navigate) {
-  const calls = await getOutboundCalls();
+  let calls = [];
+  try {
+    calls = await getOutboundCalls();
+  } catch (err) {
+    console.warn('[initOutbound] Failed to get calls:', err);
+  }
+  calls = Array.isArray(calls) ? calls : [];
   let filtered = [...calls];
 
   // Initialize 3D Metric Card Backgrounds
