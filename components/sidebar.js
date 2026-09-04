@@ -4,6 +4,7 @@
 
 export function renderSidebar(activeRoute, user) {
   const userName = user?.name || 'User';
+  const userInitials = user?.initials || user?.user?.initials || (userName ? userName.slice(0, 2).toUpperCase() : 'U');
   const userEmail = user?.email || user?.user?.email || '';
   const businessName = user?.businessName || user?.user?.businessName || '';
   const isClient = (user?.role || user?.user?.role || '').toLowerCase() === 'client';
