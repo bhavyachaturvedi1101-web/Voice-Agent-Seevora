@@ -507,17 +507,125 @@ export function initOnboarding(session, navigate) {
       : '';
   }
 
+  // ── Voice recording helper ───────────────────────────────
+  function startVoiceRecording(targetInputId, micBtnId) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      showToast({ type: 'info', title: 'Not supported', message: 'Voice input is not supported in this browser. Try Chrome.' });
+      return;
+    }
+    const micBtn = document.getElementById(micBtnId);
+    if (micBtn && micBtn._recognition) {
+      // Stop existing
+      micBtn._recognition.stop();
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-IN';
+    recognition.interimResults = true;
+    recognition.continuous = false;
+
+    if (micBtn) {
+      micBtn._recognition = recognition;
+      micBtn.classList.add('onb-mic-active');
+      micBtn.title = 'Stop recording';
+      micBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="21" x2="16" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="onb-rec-dot"></span>`;
+    }
+
+    recognition.onresult = (e) => {
+      const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
+      const inp = document.getElementById(targetInputId);
+      if (inp) inp.value = transcript;
+    };
+
+    recognition.onerror = () => {
+      showToast({ type: 'warning', title: 'Recording stopped', message: 'Could not capture audio.' });
+    };
+
+    recognition.onend = () => {
+      if (micBtn) {
+        micBtn._recognition = null;
+        micBtn.classList.remove('onb-mic-active');
+        micBtn.title = 'Record voice';
+        micBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>`;
+      }
+    };
+
+    recognition.start();
+    showToast({ type: 'info', title: '🎙️ Listening...', message: 'Speak now. Recording will stop automatically.' });
+  }
+
+  // ── Image attach helper for chat inputs ─────────────────
+  let _attachedImages = []; // holds { name, dataUrl } for the current step
+
+  function resetAttachedImages() { _attachedImages = []; }
+
+  function renderImagePreviews(containerId) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.innerHTML = _attachedImages.map((img, i) => `
+      <div class="onb-img-chip">
+        <img src="${img.dataUrl}" alt="${img.name}" />
+        <span>${img.name.length > 18 ? img.name.slice(0, 16) + '…' : img.name}</span>
+        <button class="onb-img-chip-remove" data-idx="${i}" title="Remove">✕</button>
+      </div>
+    `).join('');
+    el.querySelectorAll('.onb-img-chip-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        _attachedImages.splice(parseInt(btn.dataset.idx), 1);
+        renderImagePreviews(containerId);
+      });
+    });
+  }
+
+  function bindImageAttach(btnId, previewContainerId) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = 'image/*';
+      fileInput.multiple = true;
+      fileInput.style.display = 'none';
+      document.body.appendChild(fileInput);
+      fileInput.click();
+      fileInput.addEventListener('change', () => {
+        const files = Array.from(fileInput.files || []);
+        if (!files.length) { fileInput.remove(); return; }
+        let loaded = 0;
+        files.forEach(file => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            _attachedImages.push({ name: file.name, dataUrl: e.target.result });
+            loaded++;
+            if (loaded === files.length) renderImagePreviews(previewContainerId);
+          };
+          reader.readAsDataURL(file);
+        });
+        fileInput.remove();
+      });
+    });
+  }
+
   // ── Render Input for current step ───────────────────────
   function renderInput(step) {
     const inputArea = document.getElementById('onb-input-area');
     if (!inputArea) return;
+    resetAttachedImages();
 
     if (step.type === 'text') {
       inputArea.innerHTML = `
+        <div id="onb-img-previews" class="onb-img-preview-row"></div>
         <div class="onb-text-input-row">
           ${backBtnHTML()}
+          <button class="onb-icon-btn onb-attach-btn" id="onb-attach-btn" title="Attach image">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </button>
+          <button class="onb-icon-btn onb-mic-btn" id="onb-mic-btn" title="Record voice">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
           <input type="text" class="onb-text-input" id="onb-text-input" placeholder="${step.placeholder || 'Type here...'}" autocomplete="off" style="flex:1;" />
-          <button class="onb-send-btn" id="onb-send-btn">
+          <button class="onb-send-btn" id="onb-send-btn" title="Send (Enter)">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           </button>
         </div>
@@ -525,14 +633,35 @@ export function initOnboarding(session, navigate) {
       const inp = document.getElementById('onb-text-input');
       const btn = document.getElementById('onb-send-btn');
       inp?.focus();
-      const submit = () => { const v = inp.value.trim(); if (v && !isProcessing) submitAnswer(step, v); };
+      const submit = () => {
+        const v = inp.value.trim();
+        const imgs = _attachedImages.slice();
+        if (!v && imgs.length === 0) return;
+        if (isProcessing) return;
+        const displayText = [v, ...imgs.map(img => `📎 ${img.name}`)].filter(Boolean).join(' ');
+        submitAnswer(step, { text: v, images: imgs }, displayText);
+      };
       inp?.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
       btn?.addEventListener('click', submit);
       document.getElementById('onb-back-btn')?.addEventListener('click', goBack);
+      document.getElementById('onb-mic-btn')?.addEventListener('click', () => startVoiceRecording('onb-text-input', 'onb-mic-btn'));
+      bindImageAttach('onb-attach-btn', 'onb-img-previews');
 
     } else if (step.type === 'textarea') {
       inputArea.innerHTML = `
         <div class="onb-textarea-wrap">
+          <div class="onb-textarea-toolbar">
+            <button class="onb-icon-btn onb-attach-btn" id="onb-attach-btn" title="Attach image">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span>Attach Image</span>
+            </button>
+            <button class="onb-icon-btn onb-mic-btn" id="onb-mic-btn" title="Record voice">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              <span>Voice Input</span>
+            </button>
+            <span class="onb-hint-text">Ctrl+Enter to send</span>
+          </div>
+          <div id="onb-img-previews" class="onb-img-preview-row"></div>
           <textarea class="onb-textarea" id="onb-textarea" placeholder="${step.placeholder || 'Type your answer...'}" rows="3"></textarea>
           <div style="display:flex; gap:10px; justify-content: space-between; align-items:center; margin-top: 10px;">
             ${backBtnHTML()}
@@ -543,14 +672,23 @@ export function initOnboarding(session, navigate) {
           </div>
         </div>
       `;
-      document.getElementById('onb-textarea')?.focus();
-      document.getElementById('onb-send-btn')?.addEventListener('click', () => {
-        const val = document.getElementById('onb-textarea').value.trim();
-        if (!val && !step.optional) { showToast({ type: 'warning', title: 'Required', message: 'Please fill in this field.' }); return; }
-        if (!isProcessing) submitAnswer(step, val || '—');
-      });
-      document.getElementById('onb-skip-btn')?.addEventListener('click', () => { if (!isProcessing) submitAnswer(step, '—'); });
+      const ta = document.getElementById('onb-textarea');
+      ta?.focus();
+      const submitTA = () => {
+        const val = ta.value.trim();
+        const imgs = _attachedImages.slice();
+        if (!val && !step.optional && imgs.length === 0) { showToast({ type: 'warning', title: 'Required', message: 'Please fill in this field.' }); return; }
+        if (!isProcessing) {
+          const displayText = [val || '—', ...imgs.map(img => `📎 ${img.name}`)].filter(Boolean).join(' ');
+          submitAnswer(step, { text: val || '—', images: imgs }, displayText);
+        }
+      };
+      ta?.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); submitTA(); } });
+      document.getElementById('onb-send-btn')?.addEventListener('click', submitTA);
+      document.getElementById('onb-skip-btn')?.addEventListener('click', () => { if (!isProcessing) submitAnswer(step, { text: '—', images: [] }, '—'); });
       document.getElementById('onb-back-btn')?.addEventListener('click', goBack);
+      document.getElementById('onb-mic-btn')?.addEventListener('click', () => startVoiceRecording('onb-textarea', 'onb-mic-btn'));
+      bindImageAttach('onb-attach-btn', 'onb-img-previews');
 
     } else if (step.type === 'choice') {
       // Use 3-col grid for larger sets (industry=9), 2-col for smaller
@@ -614,8 +752,29 @@ export function initOnboarding(session, navigate) {
     if (isProcessing) return;
     isProcessing = true;
 
-    data[step.key] = value;
-    const userEl = addUserBubble(displayText || (typeof value === 'string' ? value : String(value)));
+    // Normalise value: if it's the new {text, images} shape, store only text for data keyed fields
+    const storeValue = (value && typeof value === 'object' && 'text' in value && 'images' in value)
+      ? value.text
+      : value;
+    data[step.key] = storeValue;
+
+    // Build display with image thumbnails if any
+    let userEl;
+    if (value && typeof value === 'object' && value.images && value.images.length > 0) {
+      const area = document.getElementById('onb-chat-area');
+      const wrap = document.createElement('div');
+      wrap.className = 'onb-user-msg';
+      const imgsHTML = value.images.map(img =>
+        `<img src="${img.dataUrl}" class="onb-bubble-img-thumb" alt="${img.name}" title="${img.name}" />`
+      ).join('');
+      const textPart = value.text && value.text !== '—' ? `<div style="margin-top:6px;">${value.text}</div>` : '';
+      wrap.innerHTML = `<div class="onb-bubble onb-bubble-user onb-bubble-appear">${imgsHTML}${textPart}</div>`;
+      area.appendChild(wrap);
+      area.scrollTop = area.scrollHeight;
+      userEl = wrap;
+    } else {
+      userEl = addUserBubble(displayText || (typeof value === 'string' ? value : String(value)));
+    }
 
     const inputArea = document.getElementById('onb-input-area');
     if (inputArea) inputArea.innerHTML = '';
